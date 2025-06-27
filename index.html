@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Contract Generator</title>
     <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Lora:wght@400;500;600&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
     <style>
       :root {
         --background: oklch(0.9777 0.0041 301.4256);
@@ -411,6 +413,47 @@
           flex-direction: column;
         }
       }
+
+      /* Enhanced date picker and timeline styles */
+      .date-range-picker {
+        min-width: 220px !important;
+        font-weight: 500;
+      }
+
+      input[type="date"] {
+        min-width: 180px;
+      }
+
+      .flatpickr-input {
+        min-width: 220px !important;
+      }
+
+      /* Dark mode improvements */
+      [data-theme="dark"] .flatpickr-calendar {
+        background: var(--card);
+        border-color: var(--border);
+        box-shadow: var(--shadow-md);
+      }
+
+      [data-theme="dark"] .flatpickr-day {
+        color: var(--foreground);
+      }
+
+      [data-theme="dark"] .flatpickr-day:hover {
+        background: var(--accent);
+        color: var(--accent-foreground);
+      }
+
+      [data-theme="dark"] .flatpickr-day.selected {
+        background: var(--primary);
+        color: var(--primary-foreground);
+      }
+
+      /* Toast notification styles */
+      .toastify {
+        font-family: var(--font-sans);
+        border-radius: var(--radius);
+      }
     </style>
   </head>
   <body>
@@ -444,18 +487,6 @@
                   name="contractNumber"
                   value="2025-001"
                   placeholder="e.g., 2025-001"
-                  required
-                />
-              </div>
-              <div class="form-group">
-                <label class="form-label" for="contractYear">Contract Year</label>
-                <input
-                  class="form-input"
-                  type="number"
-                  id="contractYear"
-                  name="contractYear"
-                  value="2025"
-                  placeholder="2025"
                   required
                 />
               </div>
@@ -667,7 +698,7 @@ Návrh a implementace kompletních webových stránek. Tato část díla zahrnuj
                   type="date"
                   id="completionDate"
                   name="completionDate"
-                  value="2025-03-30"
+                  value=""
                   required
                 />
               </div>
@@ -698,9 +729,6 @@ Návrh a implementace kompletních webových stránek. Tato část díla zahrnuj
           <div class="card-content">
             <div class="timeline-controls">
               <h4 style="margin: 0; font-size: 1rem; font-weight: 500;">Timeline Phases</h4>
-              <button type="button" class="btn btn-outline btn-sm" onclick="addTimelineItem()">
-                Add Phase
-              </button>
             </div>
 
             <div id="timelineContainer">
@@ -718,24 +746,17 @@ Návrh a implementace kompletních webových stránek. Tato část díla zahrnuj
                     />
                   </div>
                   <div class="form-group">
-                    <label class="form-label">Start Date</label>
+                    <label class="form-label">Date Range</label>
                     <input
-                      class="form-input"
-                      type="date"
-                      name="timelineStart[]"
-                      value="2025-02-01"
+                      class="form-input date-range-picker"
+                      type="text"
+                      name="timelineRange[]"
+                      placeholder="Select date range"
                       required
+                      style="min-width: 200px;"
                     />
-                  </div>
-                  <div class="form-group">
-                    <label class="form-label">End Date</label>
-                    <input
-                      class="form-input"
-                      type="date"
-                      name="timelineEnd[]"
-                      value="2025-02-15"
-                      required
-                    />
+                    <input type="hidden" name="timelineStart[]" value="">
+                    <input type="hidden" name="timelineEnd[]" value="">
                   </div>
                   <div class="form-group" style="display: flex; align-items: end;">
                     <button type="button" class="btn btn-destructive btn-sm" onclick="removeTimelineItem(this)">
@@ -744,6 +765,12 @@ Návrh a implementace kompletních webových stránek. Tato část díla zahrnuj
                   </div>
                 </div>
               </div>
+            </div>
+            
+            <div class="timeline-controls" style="margin-top: 1rem;">
+              <button type="button" class="btn btn-outline btn-sm" onclick="addTimelineItem()">
+                Add Phase
+              </button>
             </div>
           </div>
         </div>
@@ -812,6 +839,8 @@ Návrh a implementace kompletních webových stránek. Tato část díla zahrnuj
       </div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
     <script src="script.js"></script>
   </body>
 </html>

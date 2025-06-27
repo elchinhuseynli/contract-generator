@@ -63,8 +63,33 @@ function formatName(name) {
         .join(' ');
 }
 
+// Global formatDate function for simple date formatting
+function formatDate(dateStr) {
+    if (!dateStr) return '';
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('cs-CZ', {
+        day: '2-digit',
+        month: '2-digit', 
+        year: 'numeric'
+    });
+}
+
 function addTimelineItem() {
     const container = document.getElementById('timelineContainer');
+    const existingItems = container.querySelectorAll('.timeline-item');
+    
+    // Calculate start date for new phase (day after last phase ends)
+    let nextStartDate = '';
+    if (existingItems.length > 0) {
+        const lastItem = existingItems[existingItems.length - 1];
+        const lastEndDateInput = lastItem.querySelector('input[name="timelineEnd[]"]');
+        if (lastEndDateInput && lastEndDateInput.value) {
+            const lastEndDate = new Date(lastEndDateInput.value);
+            lastEndDate.setDate(lastEndDate.getDate() + 1);
+            nextStartDate = lastEndDate.toISOString().split('T')[0];
+        }
+    }
+    
     const timelineItem = document.createElement('div');
     timelineItem.className = 'timeline-item';
     timelineItem.innerHTML = `
@@ -74,12 +99,17 @@ function addTimelineItem() {
                 <input class="form-input" type="text" name="timelinePhase[]" placeholder="Phase name" required>
             </div>
             <div class="form-group">
-                <label class="form-label">Start Date</label>
-                <input class="form-input" type="date" name="timelineStart[]" required>
-            </div>
-            <div class="form-group">
-                <label class="form-label">End Date</label>
-                <input class="form-input" type="date" name="timelineEnd[]" required>
+                <label class="form-label">Date Range</label>
+                <input
+                    class="form-input date-range-picker"
+                    type="text"
+                    name="timelineRange[]"
+                    placeholder="Select date range"
+                    required
+                    style="min-width: 220px;"
+                />
+                <input type="hidden" name="timelineStart[]" value="${nextStartDate}">
+                <input type="hidden" name="timelineEnd[]" value="">
             </div>
             <div class="form-group" style="display: flex; align-items: end;">
                 <button type="button" class="btn btn-destructive btn-sm" onclick="removeTimelineItem(this)">Remove</button>
@@ -87,10 +117,162 @@ function addTimelineItem() {
         </div>
     `;
     container.appendChild(timelineItem);
+    
+    // Initialize date range picker for the new item
+    initializeDateRangePicker(timelineItem.querySelector('.date-range-picker'), nextStartDate);
 }
 
 function removeTimelineItem(button) {
-    button.closest('.timeline-item').remove();
+    const timelineItem = button.closest('.timeline-item');
+    timelineItem.remove();
+    
+    // Recalculate subsequent phase start dates
+    updatePhaseSequence();
+    
+    showToast('Phase removed successfully', 'success');
+}
+
+function initializeDateRangePicker(input, defaultStartDate = '') {
+    if (!input) return;
+    
+    const startDateInput = input.parentElement.querySelector('input[name="timelineStart[]"]');
+    const endDateInput = input.parentElement.querySelector('input[name="timelineEnd[]"]');
+    
+    // Set initial values if provided
+    if (defaultStartDate && startDateInput) {
+        startDateInput.value = defaultStartDate;
+    }
+    
+    const startDate = startDateInput ? startDateInput.value : defaultStartDate;
+    const endDate = endDateInput ? endDateInput.value : '';
+    
+    // Initialize display value
+    if (startDate && endDate) {
+        input.value = `${formatDate(startDate)} - ${formatDate(endDate)}`;
+    }
+    
+    // Check if flatpickr is available
+    if (typeof flatpickr === 'undefined') {
+        console.error('Flatpickr is not loaded!');
+        return;
+    }
+    
+    try {
+        const fp = flatpickr(input, {
+            mode: "range",
+            dateFormat: "Y-m-d",
+            defaultDate: startDate && endDate ? [startDate, endDate] : startDate ? [startDate] : [],
+            minDate: startDate || "today",
+            allowInput: true,
+            clickOpens: true,
+            disableMobile: false,
+            onChange: function(selectedDates, dateStr, instance) {
+                // Only update if this is a user interaction with 2 dates selected
+                if (selectedDates.length === 2) {
+                    const start = selectedDates[0].toISOString().split('T')[0];
+                    const end = selectedDates[1].toISOString().split('T')[0];
+                    
+                    if (startDateInput) startDateInput.value = start;
+                    if (endDateInput) endDateInput.value = end;
+                    
+                    input.value = `${formatDate(start)} - ${formatDate(end)}`;
+                    
+                    // Update subsequent phases only after user completes selection
+                    setTimeout(() => updatePhaseSequence(), 100);
+                }
+            },
+            onReady: function(selectedDates, dateStr, instance) {
+                // Apply dark mode styles if needed
+                if (document.documentElement.getAttribute('data-theme') === 'dark') {
+                    instance.calendarContainer.classList.add('flatpickr-dark');
+                }
+            }
+        });
+        
+        // Store reference to flatpickr instance
+        input._flatpickr = fp;
+        
+        return fp;
+    } catch (error) {
+        console.error('Error creating flatpickr instance:', error);
+        return null;
+    }
+}
+
+
+function updatePhaseSequence() {
+    const container = document.getElementById('timelineContainer');
+    const timelineItems = container.querySelectorAll('.timeline-item');
+    
+    // Ensure first item always keeps its values
+    const firstItem = timelineItems[0];
+    if (firstItem) {
+        const firstDateRangePicker = firstItem.querySelector('.date-range-picker');
+        const firstStartInput = firstItem.querySelector('input[name="timelineStart[]"]');
+        const firstEndInput = firstItem.querySelector('input[name="timelineEnd[]"]');
+        
+        // Preserve first item's display if it has values
+        if (firstStartInput && firstEndInput && firstStartInput.value && firstEndInput.value) {
+            if (firstDateRangePicker && !firstDateRangePicker.value) {
+                firstDateRangePicker.value = `${formatDate(firstStartInput.value)} - ${formatDate(firstEndInput.value)}`;
+            }
+        }
+    }
+    
+    timelineItems.forEach((item, index) => {
+        if (index === 0) return; // Skip first item completely
+        
+        const prevItem = timelineItems[index - 1];
+        const prevEndDateInput = prevItem.querySelector('input[name="timelineEnd[]"]');
+        const currentStartDateInput = item.querySelector('input[name="timelineStart[]"]');
+        const currentDateRangePicker = item.querySelector('.date-range-picker');
+        
+        if (prevEndDateInput && prevEndDateInput.value) {
+            const prevEndDate = new Date(prevEndDateInput.value);
+            prevEndDate.setDate(prevEndDate.getDate() + 1);
+            const newStartDate = prevEndDate.toISOString().split('T')[0];
+            
+            // Only update if different to avoid infinite loops
+            if (currentStartDateInput && currentStartDateInput.value !== newStartDate) {
+                currentStartDateInput.value = newStartDate;
+                
+                // Update flatpickr minDate and default start date
+                if (currentDateRangePicker && currentDateRangePicker._flatpickr) {
+                    currentDateRangePicker._flatpickr.set('minDate', newStartDate);
+                    
+                    // If current phase has an end date, update the display
+                    const currentEndDateInput = item.querySelector('input[name="timelineEnd[]"]');
+                    if (currentEndDateInput && currentEndDateInput.value) {
+                        currentDateRangePicker.value = `${formatDate(newStartDate)} - ${formatDate(currentEndDateInput.value)}`;
+                        currentDateRangePicker._flatpickr.setDate([newStartDate, currentEndDateInput.value], false);
+                    } else {
+                        // Just set the start date
+                        currentDateRangePicker._flatpickr.setDate([newStartDate], false);
+                    }
+                }
+            }
+        }
+    });
+}
+
+
+function showToast(message, type = 'info') {
+    const backgroundColor = type === 'success' ? '#10b981' : 
+                          type === 'error' ? '#ef4444' : 
+                          type === 'warning' ? '#f59e0b' : '#3b82f6';
+    
+    Toastify({
+        text: message,
+        duration: 3000,
+        gravity: "top",
+        position: "right",
+        style: {
+            background: backgroundColor,
+            borderRadius: "8px",
+            fontFamily: "var(--font-sans)",
+        },
+        stopOnFocus: true,
+    }).showToast();
 }
 
 function generatePreview() {
@@ -413,14 +595,14 @@ async function generateMarkdown() {
             document.body.removeChild(a);
             window.URL.revokeObjectURL(url);
             
-            alert('Markdown contract downloaded successfully!');
+            showToast('Markdown contract downloaded successfully!', 'success');
         } else {
             const errorData = await response.json();
             throw new Error(errorData.error || 'Failed to generate markdown');
         }
     } catch (error) {
         console.error('Error:', error);
-        alert('Error generating markdown: ' + error.message);
+        showToast('Error generating markdown: ' + error.message, 'error');
     }
 }
 
@@ -476,7 +658,7 @@ function downloadContract() {
     document.body.removeChild(a);
     window.URL.revokeObjectURL(url);
     
-    alert('Contract downloaded as HTML file! You can open it in any browser and print or save as PDF.');
+    showToast('Contract downloaded as HTML file! You can open it in any browser and print or save as PDF.', 'success');
 }
 
 async function loadFromARES() {
@@ -484,7 +666,7 @@ async function loadFromARES() {
     const ico = icoInput.value.trim();
     
     if (!ico) {
-        alert('Prosím zadejte IČO');
+        showToast('Prosím zadejte IČO', 'warning');
         return;
     }
     
@@ -517,13 +699,13 @@ async function loadFromARES() {
                 document.getElementById('clientContactPerson').value = formattedName;
             }
             
-            alert('Data byla úspěšně načtena z ARES');
+            showToast('Data byla úspěšně načtena z ARES', 'success');
         } else {
-            alert(result.error || 'Nepodařilo se načíst data z ARES');
+            showToast(result.error || 'Nepodařilo se načíst data z ARES', 'error');
         }
     } catch (error) {
         console.error('Error loading from ARES:', error);
-        alert('Chyba při načítání dat z ARES: ' + error.message);
+        showToast('Chyba při načítání dat z ARES: ' + error.message, 'error');
     } finally {
         // Reset button state
         loadingText.textContent = originalText;
@@ -560,10 +742,10 @@ async function copyMarkdownToClipboard() {
             
             // Copy markdown content to clipboard
             navigator.clipboard.writeText(result.content).then(() => {
-                alert('Markdown contract copied to clipboard! You can paste it into any text editor or markdown-compatible application.');
+                showToast('Markdown contract copied to clipboard! You can paste it into any text editor or markdown-compatible application.', 'success');
             }).catch(err => {
                 console.error('Failed to copy markdown: ', err);
-                alert('Failed to copy markdown. Please try the download option instead.');
+                showToast('Failed to copy markdown. Please try the download option instead.', 'error');
             });
         } else {
             const errorData = await response.json();
@@ -571,7 +753,7 @@ async function copyMarkdownToClipboard() {
         }
     } catch (error) {
         console.error('Error:', error);
-        alert('Error generating markdown: ' + error.message);
+        showToast('Error generating markdown: ' + error.message, 'error');
     }
 }
 
@@ -764,9 +946,70 @@ ${timelineText}
     `.trim();
 
     navigator.clipboard.writeText(textContent).then(() => {
-        alert('Contract text copied to clipboard! You can paste it into Google Docs or any text editor.');
+        showToast('Contract text copied to clipboard! You can paste it into Google Docs or any text editor.', 'success');
     }).catch(err => {
         console.error('Failed to copy text: ', err);
-        alert('Failed to copy text. Please try the download option instead.');
+        showToast('Failed to copy text. Please try the download option instead.', 'error');
+    });
+}
+
+// Initialize timeline functionality when everything is loaded
+window.addEventListener('load', function() {
+    // Wait a bit more to ensure all external scripts are loaded
+    setTimeout(function() {
+        if (typeof flatpickr !== 'undefined') {
+            initializeDefaultDates();
+            initializeExistingTimelineItems();
+        } else {
+            console.error('Flatpickr library not loaded');
+        }
+    }, 1000);
+});
+
+function initializeDefaultDates() {
+    // Set completion date to 1 month from today if not set
+    const completionDateInput = document.getElementById('completionDate');
+    if (completionDateInput && !completionDateInput.value) {
+        const today = new Date();
+        const completionDate = new Date(today);
+        completionDate.setMonth(today.getMonth() + 1);
+        completionDateInput.value = completionDate.toISOString().split('T')[0];
+    }
+}
+
+function initializeExistingTimelineItems() {
+    const existingItems = document.querySelectorAll('.timeline-item');
+    
+    existingItems.forEach((item, index) => {
+        const dateRangePicker = item.querySelector('.date-range-picker');
+        const startDateInput = item.querySelector('input[name="timelineStart[]"]');
+        const endDateInput = item.querySelector('input[name="timelineEnd[]"]');
+        
+        if (dateRangePicker && !dateRangePicker._flatpickr) {
+            // Set default dates if not already set
+            if (startDateInput && endDateInput && !startDateInput.value && !endDateInput.value) {
+                // For first item, use today as start date
+                if (index === 0) {
+                    const today = new Date();
+                    const startDate = today.toISOString().split('T')[0];
+                    
+                    // Default end date is 2 weeks from start
+                    const endDate = new Date(today);
+                    endDate.setDate(today.getDate() + 14);
+                    const endDateStr = endDate.toISOString().split('T')[0];
+                    
+                    startDateInput.value = startDate;
+                    endDateInput.value = endDateStr;
+                }
+            }
+            
+            // Set initial display value
+            if (startDateInput && endDateInput && startDateInput.value && endDateInput.value) {
+                dateRangePicker.value = `${formatDate(startDateInput.value)} - ${formatDate(endDateInput.value)}`;
+            }
+            
+            // Initialize date range picker
+            initializeDateRangePicker(dateRangePicker);
+        }
     });
 }
