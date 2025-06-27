@@ -818,12 +818,23 @@ async function loadFromARES() {
         return;
     }
     
-    // Show loading state
-    const button = event.target;
-    const loadingText = button.querySelector('.loading-text');
-    const originalText = loadingText.textContent;
-    loadingText.innerHTML = '<span class="loading-spinner"></span>Loading...';
-    button.disabled = true;
+    // Show loading state - find the button properly
+    const button = document.querySelector('button[onclick="loadFromARES()"]') || 
+                   document.querySelector('.btn:has(.loading-text)') ||
+                   Array.from(document.querySelectorAll('button')).find(btn => 
+                       btn.textContent.includes('Load from ARES') || 
+                       btn.querySelector('.loading-text')
+                   );
+    
+    const loadingText = button ? button.querySelector('.loading-text') : null;
+    const originalText = loadingText ? loadingText.textContent : 'Load from ARES';
+    
+    if (loadingText) {
+        loadingText.innerHTML = '<span class="loading-spinner"></span>Loading...';
+    }
+    if (button) {
+        button.disabled = true;
+    }
     
     try {
         const response = await fetch(`/api/ares/${ico}`);
@@ -856,8 +867,12 @@ async function loadFromARES() {
         showToast('Chyba při načítání dat z ARES: ' + error.message, 'error');
     } finally {
         // Reset button state
-        loadingText.textContent = originalText;
-        button.disabled = false;
+        if (loadingText) {
+            loadingText.textContent = originalText;
+        }
+        if (button) {
+            button.disabled = false;
+        }
     }
 }
 
