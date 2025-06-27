@@ -126,7 +126,6 @@
       .header {
         text-align: center;
         margin-bottom: 3rem;
-        position: relative;
       }
 
       .header h1 {
@@ -143,39 +142,12 @@
         margin: 0;
       }
 
-      .theme-toggle {
-        position: absolute;
-        top: 0;
-        right: 0;
-        background: var(--card);
-        border: 1px solid var(--border);
-        border-radius: var(--radius);
-        padding: 0.5rem;
-        cursor: pointer;
-        transition: all 0.2s ease;
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        font-size: 0.875rem;
-        color: var(--foreground);
-      }
-
-      .theme-toggle:hover {
-        background: var(--muted);
-      }
-
-      .theme-icon {
-        width: 1rem;
-        height: 1rem;
-      }
-
       .card {
         background-color: var(--card);
         border: 1px solid var(--border);
         border-radius: var(--radius);
         box-shadow: var(--shadow-sm);
         color: var(--card-foreground);
-        margin-bottom: 2rem;
       }
 
       .card-header {
@@ -330,6 +302,13 @@
         font-size: 0.8125rem;
       }
 
+      .section-divider {
+        border: none;
+        height: 1px;
+        background-color: var(--border);
+        margin: 2rem 0;
+      }
+
       .timeline-item {
         padding: 1rem;
         background-color: var(--muted);
@@ -371,6 +350,18 @@
 
       .hidden {
         display: none;
+      }
+
+      .alert {
+        padding: 1rem;
+        border-radius: calc(var(--radius) - 2px);
+        margin-bottom: 1rem;
+        border: 1px solid var(--border);
+      }
+
+      .alert-info {
+        background-color: var(--muted);
+        color: var(--muted-foreground);
       }
 
       .loading-spinner {
@@ -416,12 +407,6 @@
   <body>
     <div class="main-container">
       <div class="header">
-        <button class="theme-toggle" onclick="toggleTheme()" id="themeToggle">
-          <svg class="theme-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
-          </svg>
-          <span id="themeText">Light</span>
-        </button>
         <h1>Contract Generator</h1>
         <p>Professional Czech work contract generator with ARES integration</p>
       </div>
@@ -462,6 +447,8 @@
             </div>
           </div>
         </div>
+
+        <hr class="section-divider">
 
         <!-- Client Information Card -->
         <div class="card">
@@ -542,6 +529,8 @@
           </div>
         </div>
 
+        <hr class="section-divider">
+
         <!-- Contact Information Card -->
         <div class="card">
           <div class="card-header">
@@ -557,7 +546,7 @@
                   type="email"
                   id="clientEmail"
                   name="clientEmail"
-                  value="vasemail@email.cz"
+                  value="info@sansei.cz"
                   placeholder="company@example.com"
                 />
               </div>
@@ -594,13 +583,15 @@
                   type="email"
                   id="clientContactEmail"
                   name="clientContactEmail"
-                  value="vasemail@email.cz"
+                  value="taisija@sansei.cz"
                   placeholder="contact@example.com"
                 />
               </div>
             </div>
           </div>
         </div>
+
+        <hr class="section-divider">
 
         <!-- Project Details Card -->
         <div class="card">
@@ -609,6 +600,7 @@
             <p class="card-description">Project scope, pricing, and timeline</p>
           </div>
           <div class="card-content">
+
             <div class="form-group">
               <label class="form-label" for="projectDescription">Project Description</label>
               <textarea class="form-textarea" id="projectDescription" name="projectDescription" required placeholder="Detailed description of the project scope and deliverables">
@@ -659,156 +651,118 @@ Návrh a implementace kompletních webových stránek. Tato část díla zahrnuj
               </div>
             </div>
 
-            <div class="form-row">
-              <div class="form-group">
-                <label class="form-label" for="completionDate">Project Completion Date</label>
-                <input
-                  class="form-input"
-                  type="date"
-                  id="completionDate"
-                  name="completionDate"
-                  value="2025-03-30"
-                  required
-                />
-              </div>
-              <div class="form-group">
-                <label class="form-label" for="warrantyMonths">Warranty Period (months)</label>
-                <input
-                  class="form-input"
-                  type="number"
-                  id="warrantyMonths"
-                  name="warrantyMonths"
-                  value="6"
-                  placeholder="6"
-                  min="1"
-                  max="24"
-                  required
-                />
-              </div>
-            </div>
-          </div>
+        <div class="form-group">
+          <label for="completionDate">Project Completion Date:</label>
+          <input
+            type="date"
+            id="completionDate"
+            name="completionDate"
+            value="2025-03-30"
+            required
+          />
         </div>
 
-        <!-- Timeline Card -->
-        <div class="card">
-          <div class="card-header">
-            <h3 class="card-title">Project Timeline</h3>
-            <p class="card-description">Define project phases with start and end dates</p>
-          </div>
-          <div class="card-content">
-            <div class="timeline-controls">
-              <h4 style="margin: 0; font-size: 1rem; font-weight: 500;">Timeline Phases</h4>
-              <button type="button" class="btn btn-outline btn-sm" onclick="addTimelineItem()">
-                Add Phase
-              </button>
-            </div>
-
-            <div id="timelineContainer">
-              <div class="timeline-item">
-                <div class="form-row">
-                  <div class="form-group">
-                    <label class="form-label">Phase Name</label>
-                    <input
-                      class="form-input"
-                      type="text"
-                      name="timelinePhase[]"
-                      value="Tvorba prototypů webu"
-                      placeholder="Phase name"
-                      required
-                    />
-                  </div>
-                  <div class="form-group">
-                    <label class="form-label">Start Date</label>
-                    <input
-                      class="form-input"
-                      type="date"
-                      name="timelineStart[]"
-                      value="2025-02-01"
-                      required
-                    />
-                  </div>
-                  <div class="form-group">
-                    <label class="form-label">End Date</label>
-                    <input
-                      class="form-input"
-                      type="date"
-                      name="timelineEnd[]"
-                      value="2025-02-15"
-                      required
-                    />
-                  </div>
-                  <div class="form-group" style="display: flex; align-items: end;">
-                    <button type="button" class="btn btn-destructive btn-sm" onclick="removeTimelineItem(this)">
-                      Remove
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+        <div class="form-group">
+          <label for="warrantyMonths">Warranty Period (months):</label>
+          <input
+            type="number"
+            id="warrantyMonths"
+            name="warrantyMonths"
+            value="6"
+            required
+          />
         </div>
 
-        <!-- Contract Location & Date Card -->
-        <div class="card">
-          <div class="card-header">
-            <h3 class="card-title">Contract Details</h3>
-            <p class="card-description">Location and signature date</p>
-          </div>
-          <div class="card-content">
+        <div class="section-title">Timeline</div>
+
+        <div id="timelineContainer">
+          <div class="timeline-item">
             <div class="form-row">
               <div class="form-group">
-                <label class="form-label" for="contractLocation">Contract Location</label>
+                <label>Phase:</label>
                 <input
-                  class="form-input"
                   type="text"
-                  id="contractLocation"
-                  name="contractLocation"
-                  value="Karlovy Vary"
-                  placeholder="City name"
+                  name="timelinePhase[]"
+                  value="Tvorba prototypů webu"
                   required
                 />
               </div>
               <div class="form-group">
-                <label class="form-label" for="contractDate">Contract Date</label>
-                <input 
-                  class="form-input"
-                  type="date" 
-                  id="contractDate" 
-                  name="contractDate" 
-                  required 
+                <label>Start Date:</label>
+                <input
+                  type="date"
+                  name="timelineStart[]"
+                  value="2025-02-01"
+                  required
+                />
+              </div>
+              <div class="form-group">
+                <label>End Date:</label>
+                <input
+                  type="date"
+                  name="timelineEnd[]"
+                  value="2025-02-15"
+                  required
                 />
               </div>
             </div>
-
-            <!-- Action Buttons -->
-            <div class="action-buttons">
-              <button type="button" class="btn btn-outline" onclick="generatePreview()">
-                Preview Contract
-              </button>
-              <button type="button" class="btn btn-primary" onclick="generateMarkdown()">
-                Download Markdown
-              </button>
-              <button type="button" class="btn btn-secondary" onclick="copyMarkdownToClipboard()">
-                Copy Markdown
-              </button>
-              <button type="button" class="btn btn-secondary" onclick="downloadContract()">
-                Download HTML
-              </button>
-              <button type="button" class="btn btn-secondary" onclick="copyToClipboard()">
-                Copy Text
-              </button>
-            </div>
           </div>
+        </div>
+
+        <button type="button" onclick="addTimelineItem()">
+          Add Timeline Phase
+        </button>
+
+        <div class="section-title">Contract Location & Date</div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="contractLocation">Contract Location:</label>
+            <input
+              type="text"
+              id="contractLocation"
+              name="contractLocation"
+              value="Karlovy Vary"
+              required
+            />
+          </div>
+          <div class="form-group">
+            <label for="contractDate">Contract Date:</label>
+            <input type="date" id="contractDate" name="contractDate" required />
+          </div>
+        </div>
+
+        <div style="margin-top: 30px">
+          <button type="button" onclick="generatePreview()">
+            Preview Contract
+          </button>
+          <button
+            type="button"
+            class="generate-btn"
+            onclick="generateMarkdown()"
+          >
+            Download Markdown
+          </button>
+          <button
+            type="button" 
+            onclick="downloadContract()"
+            style="background-color: #6c757d;"
+          >
+            Download as HTML
+          </button>
+          <button
+            type="button"
+            onclick="copyToClipboard()"
+            style="background-color: #17a2b8;"
+          >
+            Copy Text
+          </button>
         </div>
       </form>
 
-      <!-- Preview Card -->
-      <div id="preview" class="preview-card hidden">
-        <div class="card-header">
-          <h3 class="card-title">Contract Preview</h3>
-          <p class="card-description">Review your contract before generating</p>
-        </div>
-        <div class="preview-content" id="previewContent"></div>
+      <div id="preview" class="preview hidden">
+        <h2>Contract Preview</h2>
+        <div id="previewContent"></div>
       </div>
     </div>
 

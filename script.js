@@ -1,6 +1,68 @@
 // Set today's date as default
 document.getElementById('contractDate').value = new Date().toISOString().split('T')[0];
 
+// Theme management
+function initializeTheme() {
+    const savedTheme = localStorage.getItem('theme') || 'light';
+    const body = document.body;
+    const themeText = document.getElementById('themeText');
+    const themeIcon = document.querySelector('.theme-icon path');
+    
+    if (savedTheme === 'dark') {
+        body.classList.add('dark');
+        themeText.textContent = 'Dark';
+        themeIcon.setAttribute('d', 'M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z');
+    } else {
+        body.classList.remove('dark');
+        themeText.textContent = 'Light';
+        themeIcon.setAttribute('d', 'M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z');
+    }
+}
+
+function toggleTheme() {
+    const body = document.body;
+    const themeText = document.getElementById('themeText');
+    const themeIcon = document.querySelector('.theme-icon path');
+    
+    body.classList.toggle('dark');
+    
+    if (body.classList.contains('dark')) {
+        themeText.textContent = 'Dark';
+        themeIcon.setAttribute('d', 'M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z');
+        localStorage.setItem('theme', 'dark');
+    } else {
+        themeText.textContent = 'Light';
+        themeIcon.setAttribute('d', 'M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z');
+        localStorage.setItem('theme', 'light');
+    }
+}
+
+// Initialize theme on page load
+document.addEventListener('DOMContentLoaded', initializeTheme);
+
+// Format name from UPPERCASE to proper case
+function formatName(name) {
+    if (!name) return '';
+    
+    return name
+        .toLowerCase()
+        .split(' ')
+        .map(word => {
+            // Handle Czech titles and prepositions
+            const lowerCaseWords = ['von', 'van', 'de', 'da', 'du', 'el', 'la'];
+            const upperCaseWords = ['jr', 'sr', 'ii', 'iii', 'iv'];
+            
+            if (lowerCaseWords.includes(word)) {
+                return word.toLowerCase();
+            } else if (upperCaseWords.includes(word)) {
+                return word.toUpperCase();
+            } else {
+                return word.charAt(0).toUpperCase() + word.slice(1);
+            }
+        })
+        .join(' ');
+}
+
 function addTimelineItem() {
     const container = document.getElementById('timelineContainer');
     const timelineItem = document.createElement('div');
@@ -8,19 +70,19 @@ function addTimelineItem() {
     timelineItem.innerHTML = `
         <div class="form-row">
             <div class="form-group">
-                <label>Phase:</label>
-                <input type="text" name="timelinePhase[]" required>
+                <label class="form-label">Phase Name</label>
+                <input class="form-input" type="text" name="timelinePhase[]" placeholder="Phase name" required>
             </div>
             <div class="form-group">
-                <label>Start Date:</label>
-                <input type="date" name="timelineStart[]" required>
+                <label class="form-label">Start Date</label>
+                <input class="form-input" type="date" name="timelineStart[]" required>
             </div>
             <div class="form-group">
-                <label>End Date:</label>
-                <input type="date" name="timelineEnd[]" required>
+                <label class="form-label">End Date</label>
+                <input class="form-input" type="date" name="timelineEnd[]" required>
             </div>
             <div class="form-group" style="display: flex; align-items: end;">
-                <button type="button" onclick="removeTimelineItem(this)" style="background-color: #dc3545; height: 40px;">Remove</button>
+                <button type="button" class="btn btn-destructive btn-sm" onclick="removeTimelineItem(this)">Remove</button>
             </div>
         </div>
     `;
@@ -160,6 +222,8 @@ function generateContractContent(data) {
                 <li>IČO: ${data.clientICO}</li>
                 ${data.clientDIC ? `<li>DIČ (DPH): ${data.clientDIC}</li>` : ''}
                 <li>Jednatel: ${data.clientRepresentative}</li>
+                ${data.clientEmail ? `<li>Email: ${data.clientEmail}</li>` : ''}
+                ${data.clientPhone ? `<li>Telefon: ${data.clientPhone}</li>` : ''}
             </ul>
 
             <p>Uzavřely podle ust. § 2586 a násl. zákona č. 89/2012 Sb., občanský zákoník, ve znění pozdějších předpisů a s odkazem na ust. § 61 zák. č. 121/2000 Sb., autorský zákon, ve znění pozdějších předpisů níže uvedeného dne, měsíce a roku tuto smlouvu o dílo:</p>
@@ -187,7 +251,7 @@ function generateContractContent(data) {
             <p>1. Dnem řádného předání předmětu díla se rozumí den zveřejnění předmětu díla objednateli v kvalitě a rozsahu odpovídajícím této smlouvě.</p>
             <p>2. V případě řádně provedeného díla jsou smluvní strany povinny sepsat o předání a převzetí předmětu díla předávací protokol, který bude datován a podepsán oběma smluvními stranami.</p>
             <p>3. V případě zjištění vad díla je objednatel povinen tyto vady písemně vytknout v předávacím protokolu. Smluvní strany si v předávacím protokolu dohodnou termín pro odstranění vad. V případě, že objednatel nevytkne vady v době předání, dílo se považuje za řádně a včas předané bez vad a nedodělků.</p>
-            <p>4. Osobou oprávněnou k převzetí díla za objednatele je <strong>${data.clientContactPerson}</strong></p>
+            <p>4. Osobou oprávněnou k převzetí díla za objednatele je <strong>${data.clientContactPerson}</strong>${data.clientContactEmail ? ` (email: ${data.clientContactEmail})` : ''}</p>
             <p>5. Osobou oprávněnou k předání díla za zhotovitele je <strong>Elchin Huseynli</strong>.</p>
             <p>6. Místem převzetí díla jsou <strong>${data.contractLocation}, Česká republika</strong>.</p>
 
@@ -415,6 +479,102 @@ function downloadContract() {
     alert('Contract downloaded as HTML file! You can open it in any browser and print or save as PDF.');
 }
 
+async function loadFromARES() {
+    const icoInput = document.getElementById('clientICO');
+    const ico = icoInput.value.trim();
+    
+    if (!ico) {
+        alert('Prosím zadejte IČO');
+        return;
+    }
+    
+    // Show loading state
+    const button = event.target;
+    const loadingText = button.querySelector('.loading-text');
+    const originalText = loadingText.textContent;
+    loadingText.innerHTML = '<span class="loading-spinner"></span>Loading...';
+    button.disabled = true;
+    
+    try {
+        const response = await fetch(`/api/ares/${ico}`);
+        const result = await response.json();
+        
+        if (result.success) {
+            // Fill the form fields
+            if (result.data.name) {
+                document.getElementById('clientCompany').value = result.data.name;
+            }
+            if (result.data.address) {
+                document.getElementById('clientAddress').value = result.data.address;
+            }
+            if (result.data.dic) {
+                document.getElementById('clientDIC').value = result.data.dic;
+            }
+            if (result.data.representative) {
+                const formattedName = formatName(result.data.representative);
+                document.getElementById('clientRepresentative').value = formattedName;
+                // Also set as default contact person for handover
+                document.getElementById('clientContactPerson').value = formattedName;
+            }
+            
+            alert('Data byla úspěšně načtena z ARES');
+        } else {
+            alert(result.error || 'Nepodařilo se načíst data z ARES');
+        }
+    } catch (error) {
+        console.error('Error loading from ARES:', error);
+        alert('Chyba při načítání dat z ARES: ' + error.message);
+    } finally {
+        // Reset button state
+        loadingText.textContent = originalText;
+        button.disabled = false;
+    }
+}
+
+async function copyMarkdownToClipboard() {
+    const formData = new FormData(document.getElementById('contractForm'));
+    const data = {};
+    
+    // Convert FormData to object
+    for (let [key, value] of formData.entries()) {
+        if (key.includes('[]')) {
+            const cleanKey = key.replace('[]', '');
+            if (!data[cleanKey]) data[cleanKey] = [];
+            data[cleanKey].push(value);
+        } else {
+            data[key] = value;
+        }
+    }
+
+    try {
+        const response = await fetch('/api/generate-markdown', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data)
+        });
+
+        if (response.ok) {
+            const result = await response.json();
+            
+            // Copy markdown content to clipboard
+            navigator.clipboard.writeText(result.content).then(() => {
+                alert('Markdown contract copied to clipboard! You can paste it into any text editor or markdown-compatible application.');
+            }).catch(err => {
+                console.error('Failed to copy markdown: ', err);
+                alert('Failed to copy markdown. Please try the download option instead.');
+            });
+        } else {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Failed to generate markdown');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Error generating markdown: ' + error.message);
+    }
+}
+
 function copyToClipboard() {
     const formData = new FormData(document.getElementById('contractForm'));
     const data = {};
@@ -472,6 +632,8 @@ Objednatel: ${data.clientCompany}
 • IČO: ${data.clientICO}
 ${data.clientDIC ? `• DIČ (DPH): ${data.clientDIC}` : ''}
 • Jednatel: ${data.clientRepresentative}
+${data.clientEmail ? `• Email: ${data.clientEmail}` : ''}
+${data.clientPhone ? `• Telefon: ${data.clientPhone}` : ''}
 
 Uzavřely podle ust. § 2586 a násl. zákona č. 89/2012 Sb., občanský zákoník, ve znění pozdějších předpisů a s odkazem na ust. § 61 zák. č. 121/2000 Sb., autorský zákon, ve znění pozdějších předpisů níže uvedeného dne, měsíce a roku tuto smlouvu o dílo:
 
@@ -502,7 +664,7 @@ IV. Převzetí a předání díla
 1. Dnem řádného předání předmětu díla se rozumí den zveřejnění předmětu díla objednateli v kvalitě a rozsahu odpovídajícím této smlouvě.
 2. V případě řádně provedeného díla jsou smluvní strany povinny sepsat o předání a převzetí předmětu díla předávací protokol, který bude datován a podepsán oběma smluvními stranami.
 3. V případě zjištění vad díla je objednatel povinen tyto vady písemně vytknout v předávacím protokolu. Smluvní strany si v předávacím protokolu dohodnou termín pro odstranění vad. V případě, že objednatel nevytkne vady v době předání, dílo se považuje za řádně a včas předané bez vad a nedodělků.
-4. Osobou oprávněnou k převzetí díla za objednatele je ${data.clientContactPerson}
+4. Osobou oprávněnou k převzetí díla za objednatele je ${data.clientContactPerson}${data.clientContactEmail ? ` (email: ${data.clientContactEmail})` : ''}
 5. Osobou oprávněnou k předání díla za zhotovitele je Elchin Huseynli.
 6. Místem převzetí díla jsou ${data.contractLocation}, Česká republika.
 

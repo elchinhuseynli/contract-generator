@@ -149,6 +149,8 @@ function generateMarkdownContract(data) {
 * IČO: ${data.clientICO}  
 ${data.clientDIC ? `* DIČ (DPH): ${data.clientDIC}  ` : ""}
 * Jednatel: ${data.clientRepresentative}
+${data.clientEmail ? `* Email: ${data.clientEmail}  ` : ""}
+${data.clientPhone ? `* Telefon: ${data.clientPhone}  ` : ""}
 
 Uzavřely podle ust. § 2586 a násl. zákona č. 89/2012 Sb., občanský zákoník, ve znění pozdějších předpisů a s odkazem na ust. § 61 zák. č. 121/2000 Sb., autorský zákon, ve znění pozdějších předpisů níže uvedeného dne, měsíce a roku tuto smlouvu o dílo:
 
@@ -181,9 +183,7 @@ Uzavřely podle ust. § 2586 a násl. zákona č. 89/2012 Sb., občanský zákon
 1. Dnem řádného předání předmětu díla se rozumí den zveřejnění předmětu díla objednateli v kvalitě a rozsahu odpovídajícím této smlouvě.  
 2. V případě řádně provedeného díla jsou smluvní strany povinny sepsat o předání a převzetí předmětu díla předávací protokol, který bude datován a podepsán oběma smluvními stranami.  
 3. V případě zjištění vad díla je objednatel povinen tyto vady písemně vytknout v předávacím protokolu. Smluvní strany si v předávacím protokolu dohodnou termín pro odstranění vad. V případě, že objednatel nevytkne vady v době předání, dílo se považuje za řádně a včas předané bez vad a nedodělků.  
-4. Osobou oprávněnou k převzetí díla za objednatele je ${
-    data.clientContactPerson
-  }  
+4. Osobou oprávněnou k převzetí díla za objednatele je ${data.clientContactPerson}${data.clientContactEmail ? ` (email: ${data.clientContactEmail})` : ''}  
 5. Osobou oprávněnou k předání díla za zhotovitele je Elchin Huseynli.  
 6. Místem převzetí díla jsou ${data.contractLocation}, Česká republika.
 
@@ -293,6 +293,152 @@ Veškeré potřebné podklady a informace pro tvorbu díla dodá objednatel.
 ${timelineTable}
 `;
 }
+
+// API endpoint to fetch company data from ARES
+app.get("/api/ares/:ico", async (req, res) => {
+  try {
+    const ico = req.params.ico;
+    
+    // First get basic info (including DIC) from main endpoint
+    const basicUrl = `https://ares.gov.cz/ekonomicke-subjekty-v-be/rest/ekonomicke-subjekty/${ico}`;
+    const basicResponse = await fetch(basicUrl, {
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    let basicData = null;
+    if (basicResponse.ok) {
+      basicData = await basicResponse.json();
+    }
+    
+    // Then get detailed VR data for statutory organ info
+    const aresUrl = `https://ares.gov.cz/ekonomicke-subjekty-v-be/rest/ekonomicke-subjekty-vr/${ico}`;
+    
+    const response = await fetch(aresUrl, {
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    if (!response.ok) {
+      throw new Error(`ARES API error: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    
+    // Debug logging (can be removed in production)
+    console.log('ARES Response for ICO:', ico);
+    
+    // Extract relevant company information from both sources
+    const companyInfo = {
+      ico: ico,
+      name: '',
+      address: '',
+      dic: '',
+      representative: ''
+    };
+    
+    // Get basic info from basicData if available
+    if (basicData) {
+      companyInfo.name = basicData.obchodniJmeno || basicData.nazev || '';
+      companyInfo.dic = basicData.dic || '';
+      
+      if (basicData.sidlo && basicData.sidlo.textovaAdresa) {
+        companyInfo.address = basicData.sidlo.textovaAdresa;
+      }
+    }
+    
+    // Get additional data from VR record
+    if (data.zaznamy && data.zaznamy.length > 0) {
+      const primaryRecord = data.zaznamy.find(z => z.primarniZaznam) || data.zaznamy[0];
+      
+      // Use VR data if basic data didn't provide name
+      if (!companyInfo.name && primaryRecord.obchodniJmeno && primaryRecord.obchodniJmeno.length > 0) {
+        companyInfo.name = primaryRecord.obchodniJmeno[0].hodnota;
+      }
+      
+      // Use VR data if basic data didn't provide address
+      if (!companyInfo.address && primaryRecord.adresy && primaryRecord.adresy.length > 0) {
+        const latestAddress = primaryRecord.adresy
+          .filter(a => a.typAdresy === 'SIDLO' && !a.datumVymazu)
+          .sort((a, b) => new Date(b.datumZapisu) - new Date(a.datumZapisu))[0];
+          
+        if (latestAddress && latestAddress.adresa) {
+          companyInfo.address = latestAddress.adresa.textovaAdresa;
+        }
+      }
+    }
+    
+    // Try to get representative from statutory bodies
+    if (data.zaznamy && data.zaznamy.length > 0) {
+      const primaryRecord = data.zaznamy.find(z => z.primarniZaznam) || data.zaznamy[0];
+      
+      if (primaryRecord.statutarniOrgany && Array.isArray(primaryRecord.statutarniOrgany)) {
+        // Find the statutory organ
+        const statutarniOrgan = primaryRecord.statutarniOrgany.find(org => 
+          org.typOrganu === 'STATUTARNI_ORGAN'
+        );
+        
+        if (statutarniOrgan && statutarniOrgan.clenoveOrganu) {
+          // Find current active member with jednatel function
+          const currentRepresentative = statutarniOrgan.clenoveOrganu.find(clen => {
+            return !clen.datumVymazu && // not deleted
+                   clen.clenstvi && 
+                   clen.clenstvi.funkce && 
+                   clen.clenstvi.funkce.nazev &&
+                   clen.clenstvi.funkce.nazev.toLowerCase().includes('jednatel');
+          });
+          
+          if (currentRepresentative && currentRepresentative.fyzickaOsoba) {
+            const person = currentRepresentative.fyzickaOsoba;
+            
+            let fullName = '';
+            if (person.titulPredJmenem) fullName += person.titulPredJmenem + ' ';
+            if (person.jmeno) fullName += person.jmeno + ' ';
+            if (person.prijmeni) fullName += person.prijmeni;
+            if (person.titulZaJmenem) fullName += ' ' + person.titulZaJmenem;
+            
+            companyInfo.representative = fullName.trim();
+          }
+          
+          // If no jednatel found, take any current active member
+          if (!companyInfo.representative) {
+            const anyActiveMember = statutarniOrgan.clenoveOrganu.find(clen => 
+              !clen.datumVymazu && clen.fyzickaOsoba
+            );
+            
+            if (anyActiveMember && anyActiveMember.fyzickaOsoba) {
+              const person = anyActiveMember.fyzickaOsoba;
+              
+              let fullName = '';
+              if (person.titulPredJmenem) fullName += person.titulPredJmenem + ' ';
+              if (person.jmeno) fullName += person.jmeno + ' ';
+              if (person.prijmeni) fullName += person.prijmeni;
+              if (person.titulZaJmenem) fullName += ' ' + person.titulZaJmenem;
+              
+              companyInfo.representative = fullName.trim();
+            }
+          }
+        }
+      }
+    }
+    
+    res.json({
+      success: true,
+      data: companyInfo
+    });
+    
+  } catch (error) {
+    console.error('ARES API error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Nepodařilo se načíst data ze systému ARES. Zkontrolujte IČO.'
+    });
+  }
+});
 
 // API endpoint to generate markdown contract
 app.post("/api/generate-markdown", async (req, res) => {
