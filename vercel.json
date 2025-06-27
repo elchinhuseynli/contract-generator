@@ -15,12 +15,16 @@
       "dest": "/server.js"
     },
     {
-      "src": "/(.*\\.(js|css|ico|png|jpg|jpeg|gif|svg|woff|woff2|ttf|eot))",
+      "src": "/",
+      "dest": "/index.html"
+    },
+    {
+      "src": "/(.*\\.(js|css|ico|png|jpg|jpeg|gif|svg|woff|woff2|ttf|eot|html))",
       "dest": "/$1"
     },
     {
       "src": "/(.*)",
-      "dest": "/server.js"
+      "dest": "/index.html"
     }
   ]
 }
