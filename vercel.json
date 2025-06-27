@@ -28,9 +28,12 @@
       "dest": "/server.js"
     },
     {
+      "src": "/(.*\.(js|css|ico|png|jpg|jpeg|gif|svg|woff|woff2|ttf|eot|html))",
+      "dest": "/$1"
+    },
+    {
       "src": "/(.*)",
       "dest": "/index.html"
     }
   ]
-}
 }
