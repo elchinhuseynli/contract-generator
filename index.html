@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Contract Generator</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px;
+        background-color: #f5f5f5;
+      }
+      .container {
+        background: white;
+        padding: 30px;
+        border-radius: 10px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      }
+      h1 {
+        color: #333;
+        text-align: center;
+      }
+      .form-group {
+        margin-bottom: 20px;
+      }
+      label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: bold;
+        color: #555;
+      }
+      input,
+      textarea,
+      select {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        font-size: 14px;
+        box-sizing: border-box;
+      }
+      textarea {
+        resize: vertical;
+        min-height: 100px;
+      }
+      .form-row {
+        display: flex;
+        gap: 20px;
+      }
+      .form-row .form-group {
+        flex: 1;
+      }
+      button {
+        background-color: #007bff;
+        color: white;
+        padding: 12px 30px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 16px;
+        margin-right: 10px;
+      }
+      button:hover {
+        background-color: #0056b3;
+      }
+      .generate-btn {
+        background-color: #28a745;
+      }
+      .generate-btn:hover {
+        background-color: #218838;
+      }
+      .preview {
+        margin-top: 30px;
+        padding: 20px;
+        background-color: #f8f9fa;
+        border-radius: 5px;
+      }
+      .hidden {
+        display: none;
+      }
+      .section-title {
+        background-color: #e9ecef;
+        padding: 10px;
+        margin: 20px 0 10px 0;
+        border-radius: 5px;
+        font-weight: bold;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Contract Generator - Smlouva o dílo</h1>
+
+      <form id="contractForm">
+        <div class="section-title">Contract Details</div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="contractNumber">Contract Number:</label>
+            <input
+              type="text"
+              id="contractNumber"
+              name="contractNumber"
+              value="2025-001"
+              required
+            />
+          </div>
+          <div class="form-group">
+            <label for="contractYear">Contract Year:</label>
+            <input
+              type="number"
+              id="contractYear"
+              name="contractYear"
+              value="2025"
+              required
+            />
+          </div>
+        </div>
+
+        <div class="section-title">Client (Objednatel) Information</div>
+
+        <div class="form-group">
+          <label for="clientCompany">Client Company Name:</label>
+          <input
+            type="text"
+            id="clientCompany"
+            name="clientCompany"
+            value="SANSEI spol. s r.o."
+            required
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="clientAddress">Client Address:</label>
+          <input
+            type="text"
+            id="clientAddress"
+            name="clientAddress"
+            value="Rybářská 839/2, Stará Role, 360 17 Karlovy Vary"
+            required
+          />
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="clientICO">Client IČO:</label>
+            <input
+              type="text"
+              id="clientICO"
+              name="clientICO"
+              value="29122040"
+              required
+            />
+          </div>
+          <div class="form-group">
+            <label for="clientDIC">Client DIČ:</label>
+            <input
+              type="text"
+              id="clientDIC"
+              name="clientDIC"
+              value="CZ29122040"
+            />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="clientRepresentative">Client Representative:</label>
+          <input
+            type="text"
+            id="clientRepresentative"
+            name="clientRepresentative"
+            value="Olga Maksimova"
+            required
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="clientContactPerson">Contact Person for Handover:</label>
+          <input
+            type="text"
+            id="clientContactPerson"
+            name="clientContactPerson"
+            value="Taisija Jasinská"
+            required
+          />
+        </div>
+
+        <div class="section-title">Project Details</div>
+
+        <div class="form-group">
+          <label for="projectDescription">Project Description:</label>
+          <textarea id="projectDescription" name="projectDescription" required>
+Návrh a implementace kompletních webových stránek. Tato část díla zahrnuje:
+* Unikátní grafický návrh odpovídající vizuální identitě
+* Responzivní design optimalizovaný pro různá zařízení (mobily, tablety, počítače)
+* Implementace základní struktury stránek včetně navigačního menu
+* Integrace vícejazyčnosti (plugin Weglot - placený zadavatelem)
+* Integrace online rezervačního systému (externí plugin - placený zadavatelem)
+* Optimalizace pro podporované webové prohlížeče: Chrome, Firefox, Safari, Opera (aktuální verze a dvě předchozí verze)
+* Základní SEO optimalizace včetně nastavení meta tagů, optimalizace URL struktury a vytvoření sitemap
+* Zabezpečení webových stránek pomocí HTTPS protokolu
+* Napojení na redakční systém WordPress včetně instalace a základní konfigurace
+* Tvorbu textového obsahu (copywriting) pro webové stránky
+* Implementace správy cookies v souladu s GDPR (včetně banneru pro souhlas s cookies)
+* Propojení se sociálními sítěmi včetně integrace sdílecích tlačítek
+* Optimalizace rychlosti načítání stránek
+* Implementace kontaktního formuláře s ochranou proti spamu
+* Základní školení pro správu obsahu v redakčním systému WordPress (2 hodiny)</textarea
+          >
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="projectPrice">Project Price (CZK):</label>
+            <input
+              type="number"
+              id="projectPrice"
+              name="projectPrice"
+              value="75000"
+              required
+            />
+          </div>
+          <div class="form-group">
+            <label for="advancePercent">Advance Payment (%):</label>
+            <input
+              type="number"
+              id="advancePercent"
+              name="advancePercent"
+              value="50"
+              required
+            />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="completionDate">Project Completion Date:</label>
+          <input
+            type="date"
+            id="completionDate"
+            name="completionDate"
+            value="2025-03-30"
+            required
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="warrantyMonths">Warranty Period (months):</label>
+          <input
+            type="number"
+            id="warrantyMonths"
+            name="warrantyMonths"
+            value="6"
+            required
+          />
+        </div>
+
+        <div class="section-title">Timeline</div>
+
+        <div id="timelineContainer">
+          <div class="timeline-item">
+            <div class="form-row">
+              <div class="form-group">
+                <label>Phase:</label>
+                <input
+                  type="text"
+                  name="timelinePhase[]"
+                  value="Tvorba prototypů webu"
+                  required
+                />
+              </div>
+              <div class="form-group">
+                <label>Start Date:</label>
+                <input
+                  type="date"
+                  name="timelineStart[]"
+                  value="2025-02-01"
+                  required
+                />
+              </div>
+              <div class="form-group">
+                <label>End Date:</label>
+                <input
+                  type="date"
+                  name="timelineEnd[]"
+                  value="2025-02-15"
+                  required
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <button type="button" onclick="addTimelineItem()">
+          Add Timeline Phase
+        </button>
+
+        <div class="section-title">Contract Location & Date</div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="contractLocation">Contract Location:</label>
+            <input
+              type="text"
+              id="contractLocation"
+              name="contractLocation"
+              value="Karlovy Vary"
+              required
+            />
+          </div>
+          <div class="form-group">
+            <label for="contractDate">Contract Date:</label>
+            <input type="date" id="contractDate" name="contractDate" required />
+          </div>
+        </div>
+
+        <div style="margin-top: 30px">
+          <button type="button" onclick="generatePreview()">
+            Preview Contract
+          </button>
+          <button
+            type="button"
+            class="generate-btn"
+            onclick="generateMarkdown()"
+          >
+            Download Markdown
+          </button>
+          <button
+            type="button" 
+            onclick="downloadContract()"
+            style="background-color: #6c757d;"
+          >
+            Download as HTML
+          </button>
+          <button
+            type="button"
+            onclick="copyToClipboard()"
+            style="background-color: #17a2b8;"
+          >
+            Copy Text
+          </button>
+        </div>
+      </form>
+
+      <div id="preview" class="preview hidden">
+        <h2>Contract Preview</h2>
+        <div id="previewContent"></div>
+      </div>
+    </div>
+
+    <script src="script.js"></script>
+  </body>
+</html>
