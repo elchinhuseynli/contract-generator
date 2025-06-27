@@ -2,6 +2,16 @@ const express = require("express");
 const path = require("path");
 const fs = require("fs").promises;
 
+// Add fetch polyfill for older Node.js versions
+const fetch = (() => {
+  try {
+    return globalThis.fetch || require('node-fetch');
+  } catch {
+    // If node-fetch is not available, use built-in fetch (Node 18+)
+    return globalThis.fetch;
+  }
+})();
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -296,6 +306,8 @@ ${timelineTable}
 
 // API endpoint to fetch company data from ARES
 app.get("/api/ares/:ico", async (req, res) => {
+  console.log(`ARES API called for ICO: ${req.params.ico}`);
+  
   try {
     const ico = req.params.ico;
     
@@ -433,9 +445,17 @@ app.get("/api/ares/:ico", async (req, res) => {
     
   } catch (error) {
     console.error('ARES API error:', error);
+    console.error("Full error details:", {
+      message: error.message,
+      stack: error.stack,
+      ico: req.params.ico,
+      url: req.url
+    });
+    
     res.status(500).json({
       success: false,
-      error: 'Nepodařilo se načíst data ze systému ARES. Zkontrolujte IČO.'
+      error: 'Nepodařilo se načíst data ze systému ARES. Zkontrolujte IČO.',
+      debug: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 });
@@ -461,13 +481,22 @@ app.post("/api/generate-markdown", async (req, res) => {
   }
 });
 
-// Serve the main page
-app.get("/", (req, res) => {
+// Handle all other routes - serve static files or main page
+app.get("*", (req, res) => {
+  // If it's an API route that doesn't exist, return 404
+  if (req.path.startsWith('/api/')) {
+    return res.status(404).json({ error: 'API endpoint not found' });
+  }
+  
+  // For all other routes, serve the main page
   res.sendFile(path.join(__dirname, "index.html"));
 });
 
-app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
-});
+// Only start server if not in serverless environment (like Vercel)
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`Server running on http://localhost:${PORT}`);
+  });
+}
 
 module.exports = app;

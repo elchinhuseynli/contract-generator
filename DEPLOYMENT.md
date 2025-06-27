@@ -53,8 +53,59 @@ No environment variables required for basic functionality.
 4. Test dark/light mode
 5. Test export functions
 
+## Troubleshooting ARES API Issues
+
+If you get 404 errors on `/api/ares/` endpoints after deployment:
+
+### Check 1: Hosting Platform
+Make sure your hosting platform supports Node.js backend:
+- ✅ Vercel (with vercel.json)
+- ✅ Railway 
+- ✅ Render
+- ❌ Netlify (static hosting only - needs functions)
+
+### Check 2: Redeploy with Latest Config
+```bash
+# For Vercel
+vercel --force
+
+# For Railway/Render
+# Push to Git to trigger redeploy
+```
+
+### Check 3: Environment Variables
+No special environment variables needed for basic functionality.
+
+### Check 4: Test API Directly
+After deployment, test the API endpoint directly:
+```
+https://your-app.vercel.app/api/ares/27082440
+```
+
+Should return JSON, not HTML error page.
+
+## Platform-Specific Instructions
+
+### Vercel
+- Uses `vercel.json` for routing
+- Automatically detects Node.js
+- Supports serverless functions
+
+### Railway
+- Auto-detects from package.json
+- No config files needed
+- Full Node.js server support
+
+### Render
+- Uses `render.yaml` (optional)
+- Full Node.js server support
+- Free tier available
+
 ## Support
 - All date formats use EU standard (DD-MM-YYYY)
 - ARES integration works with Czech company registry
 - Mobile-friendly responsive design
 - Professional Czech contract templates
+
+## Debug Mode
+Set NODE_ENV=development for detailed error messages.
