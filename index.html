@@ -4,16 +4,25 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Contract Generator</title>
-    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Lora:wght@400;500;600&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+    <link
+      href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Lora:wght@400;500;600&family=Fira+Code:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css"
+    />
     <style>
       :root {
         --background: oklch(0.9777 0.0041 301.4256);
         --foreground: oklch(0.3651 0.0325 287.0807);
-        --card: oklch(1.0000 0 0);
+        --card: oklch(1 0 0);
         --card-foreground: oklch(0.3651 0.0325 287.0807);
-        --popover: oklch(1.0000 0 0);
+        --popover: oklch(1 0 0);
         --popover-foreground: oklch(0.3651 0.0325 287.0807);
         --primary: oklch(0.6104 0.0767 299.7335);
         --primary-foreground: oklch(0.9777 0.0041 301.4256);
@@ -30,8 +39,8 @@
         --ring: oklch(0.6104 0.0767 299.7335);
         --chart-1: oklch(0.6104 0.0767 299.7335);
         --chart-2: oklch(0.7889 0.0802 359.9375);
-        --chart-3: oklch(0.7321 0.0749 169.8670);
-        --chart-4: oklch(0.8540 0.0882 76.8292);
+        --chart-3: oklch(0.7321 0.0749 169.867);
+        --chart-4: oklch(0.854 0.0882 76.8292);
         --chart-5: oklch(0.7857 0.0645 258.0839);
         --sidebar: oklch(0.9554 0.0082 301.3541);
         --sidebar-foreground: oklch(0.3651 0.0325 287.0807);
@@ -39,7 +48,7 @@
         --sidebar-primary-foreground: oklch(0.9777 0.0041 301.4256);
         --sidebar-accent: oklch(0.7889 0.0802 359.9375);
         --sidebar-accent-foreground: oklch(0.3394 0.0441 1.7583);
-        --sidebar-border: oklch(0.8719 0.0198 302.1690);
+        --sidebar-border: oklch(0.8719 0.0198 302.169);
         --sidebar-ring: oklch(0.6104 0.0767 299.7335);
         --font-sans: Geist, sans-serif;
         --font-serif: "Lora", Georgia, serif;
@@ -47,41 +56,46 @@
         --radius: 0.5rem;
         --shadow-2xs: 1px 2px 5px 1px hsl(0 0% 0% / 0.03);
         --shadow-xs: 1px 2px 5px 1px hsl(0 0% 0% / 0.03);
-        --shadow-sm: 1px 2px 5px 1px hsl(0 0% 0% / 0.06), 1px 1px 2px 0px hsl(0 0% 0% / 0.06);
-        --shadow: 1px 2px 5px 1px hsl(0 0% 0% / 0.06), 1px 1px 2px 0px hsl(0 0% 0% / 0.06);
-        --shadow-md: 1px 2px 5px 1px hsl(0 0% 0% / 0.06), 1px 2px 4px 0px hsl(0 0% 0% / 0.06);
-        --shadow-lg: 1px 2px 5px 1px hsl(0 0% 0% / 0.06), 1px 4px 6px 0px hsl(0 0% 0% / 0.06);
-        --shadow-xl: 1px 2px 5px 1px hsl(0 0% 0% / 0.06), 1px 8px 10px 0px hsl(0 0% 0% / 0.06);
+        --shadow-sm: 1px 2px 5px 1px hsl(0 0% 0% / 0.06),
+          1px 1px 2px 0px hsl(0 0% 0% / 0.06);
+        --shadow: 1px 2px 5px 1px hsl(0 0% 0% / 0.06),
+          1px 1px 2px 0px hsl(0 0% 0% / 0.06);
+        --shadow-md: 1px 2px 5px 1px hsl(0 0% 0% / 0.06),
+          1px 2px 4px 0px hsl(0 0% 0% / 0.06);
+        --shadow-lg: 1px 2px 5px 1px hsl(0 0% 0% / 0.06),
+          1px 4px 6px 0px hsl(0 0% 0% / 0.06);
+        --shadow-xl: 1px 2px 5px 1px hsl(0 0% 0% / 0.06),
+          1px 8px 10px 0px hsl(0 0% 0% / 0.06);
         --shadow-2xl: 1px 2px 5px 1px hsl(0 0% 0% / 0.15);
       }
 
       .dark {
         --background: oklch(0.2166 0.0215 292.8474);
-        --foreground: oklch(0.9053 0.0245 293.5570);
+        --foreground: oklch(0.9053 0.0245 293.557);
         --card: oklch(0.2544 0.0301 292.7315);
-        --card-foreground: oklch(0.9053 0.0245 293.5570);
+        --card-foreground: oklch(0.9053 0.0245 293.557);
         --popover: oklch(0.2544 0.0301 292.7315);
-        --popover-foreground: oklch(0.9053 0.0245 293.5570);
+        --popover-foreground: oklch(0.9053 0.0245 293.557);
         --primary: oklch(0.7058 0.0777 302.0489);
         --primary-foreground: oklch(0.2166 0.0215 292.8474);
         --secondary: oklch(0.4604 0.0472 295.5578);
-        --secondary-foreground: oklch(0.9053 0.0245 293.5570);
-        --muted: oklch(0.2560 0.0320 294.8380);
+        --secondary-foreground: oklch(0.9053 0.0245 293.557);
+        --muted: oklch(0.256 0.032 294.838);
         --muted-foreground: oklch(0.6974 0.0282 300.0614);
         --accent: oklch(0.3181 0.0321 308.6149);
         --accent-foreground: oklch(0.8391 0.0692 2.6681);
-        --destructive: oklch(0.6875 0.1420 21.4566);
+        --destructive: oklch(0.6875 0.142 21.4566);
         --destructive-foreground: oklch(0.2166 0.0215 292.8474);
         --border: oklch(0.3063 0.0359 293.3367);
         --input: oklch(0.2847 0.0346 291.2726);
         --ring: oklch(0.7058 0.0777 302.0489);
         --chart-1: oklch(0.7058 0.0777 302.0489);
         --chart-2: oklch(0.8391 0.0692 2.6681);
-        --chart-3: oklch(0.7321 0.0749 169.8670);
-        --chart-4: oklch(0.8540 0.0882 76.8292);
+        --chart-3: oklch(0.7321 0.0749 169.867);
+        --chart-4: oklch(0.854 0.0882 76.8292);
         --chart-5: oklch(0.7857 0.0645 258.0839);
-        --sidebar: oklch(0.1985 0.0200 293.6639);
-        --sidebar-foreground: oklch(0.9053 0.0245 293.5570);
+        --sidebar: oklch(0.1985 0.02 293.6639);
+        --sidebar-foreground: oklch(0.9053 0.0245 293.557);
         --sidebar-primary: oklch(0.7058 0.0777 302.0489);
         --sidebar-primary-foreground: oklch(0.2166 0.0215 292.8474);
         --sidebar-accent: oklch(0.3181 0.0321 308.6149);
@@ -94,11 +108,16 @@
         --radius: 0.5rem;
         --shadow-2xs: 1px 2px 5px 1px hsl(0 0% 0% / 0.03);
         --shadow-xs: 1px 2px 5px 1px hsl(0 0% 0% / 0.03);
-        --shadow-sm: 1px 2px 5px 1px hsl(0 0% 0% / 0.06), 1px 1px 2px 0px hsl(0 0% 0% / 0.06);
-        --shadow: 1px 2px 5px 1px hsl(0 0% 0% / 0.06), 1px 1px 2px 0px hsl(0 0% 0% / 0.06);
-        --shadow-md: 1px 2px 5px 1px hsl(0 0% 0% / 0.06), 1px 2px 4px 0px hsl(0 0% 0% / 0.06);
-        --shadow-lg: 1px 2px 5px 1px hsl(0 0% 0% / 0.06), 1px 4px 6px 0px hsl(0 0% 0% / 0.06);
-        --shadow-xl: 1px 2px 5px 1px hsl(0 0% 0% / 0.06), 1px 8px 10px 0px hsl(0 0% 0% / 0.06);
+        --shadow-sm: 1px 2px 5px 1px hsl(0 0% 0% / 0.06),
+          1px 1px 2px 0px hsl(0 0% 0% / 0.06);
+        --shadow: 1px 2px 5px 1px hsl(0 0% 0% / 0.06),
+          1px 1px 2px 0px hsl(0 0% 0% / 0.06);
+        --shadow-md: 1px 2px 5px 1px hsl(0 0% 0% / 0.06),
+          1px 2px 4px 0px hsl(0 0% 0% / 0.06);
+        --shadow-lg: 1px 2px 5px 1px hsl(0 0% 0% / 0.06),
+          1px 4px 6px 0px hsl(0 0% 0% / 0.06);
+        --shadow-xl: 1px 2px 5px 1px hsl(0 0% 0% / 0.06),
+          1px 8px 10px 0px hsl(0 0% 0% / 0.06);
         --shadow-2xl: 1px 2px 5px 1px hsl(0 0% 0% / 0.15);
       }
 
@@ -242,7 +261,7 @@
         background-color: var(--input);
         color: var(--foreground);
         font-size: 0.875rem;
-        min-height: 120px;
+        min-height: 20rem;
         resize: vertical;
         font-family: var(--font-sans);
         transition: all 0.2s ease;
@@ -420,12 +439,15 @@
         font-weight: 500;
       }
 
-      input[type="date"] {
-        min-width: 180px;
+      .flatpickr-input,
+      .flatpickr-date {
+        min-width: 200px !important;
+        cursor: pointer;
       }
-
-      .flatpickr-input {
+      
+      .date-range-picker {
         min-width: 220px !important;
+        cursor: pointer;
       }
 
       /* Dark mode improvements */
@@ -460,8 +482,18 @@
     <div class="main-container">
       <div class="header">
         <button class="theme-toggle" onclick="toggleTheme()" id="themeToggle">
-          <svg class="theme-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+          <svg
+            class="theme-icon"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"
+            />
           </svg>
           <span id="themeText">Light</span>
         </button>
@@ -474,12 +506,16 @@
         <div class="card">
           <div class="card-header">
             <h3 class="card-title">Contract Details</h3>
-            <p class="card-description">Basic contract information and numbering</p>
+            <p class="card-description">
+              Basic contract information and numbering
+            </p>
           </div>
           <div class="card-content">
             <div class="form-row">
               <div class="form-group">
-                <label class="form-label" for="contractNumber">Contract Number</label>
+                <label class="form-label" for="contractNumber"
+                  >Contract Number</label
+                >
                 <input
                   class="form-input"
                   type="text"
@@ -498,7 +534,9 @@
         <div class="card">
           <div class="card-header">
             <h3 class="card-title">Client Information</h3>
-            <p class="card-description">Company details and legal information</p>
+            <p class="card-description">
+              Company details and legal information
+            </p>
           </div>
           <div class="card-content">
             <div class="form-group">
@@ -515,7 +553,9 @@
             </div>
 
             <div class="form-group">
-              <label class="form-label" for="clientAddress">Company Address</label>
+              <label class="form-label" for="clientAddress"
+                >Company Address</label
+              >
               <input
                 class="form-input"
                 type="text"
@@ -529,7 +569,9 @@
 
             <div class="form-row">
               <div class="form-group">
-                <label class="form-label" for="clientICO">IČO (Company ID)</label>
+                <label class="form-label" for="clientICO"
+                  >IČO (Company ID)</label
+                >
                 <div class="input-with-button">
                   <input
                     class="form-input"
@@ -540,7 +582,11 @@
                     placeholder="12345678"
                     required
                   />
-                  <button type="button" class="btn btn-secondary btn-sm" onclick="loadFromARES()">
+                  <button
+                    type="button"
+                    class="btn btn-secondary btn-sm"
+                    onclick="loadFromARES()"
+                  >
                     <span class="loading-text">Load from ARES</span>
                   </button>
                 </div>
@@ -559,7 +605,9 @@
             </div>
 
             <div class="form-group">
-              <label class="form-label" for="clientRepresentative">Legal Representative</label>
+              <label class="form-label" for="clientRepresentative"
+                >Legal Representative</label
+              >
               <input
                 class="form-input"
                 type="text"
@@ -577,12 +625,16 @@
         <div class="card">
           <div class="card-header">
             <h3 class="card-title">Contact Information</h3>
-            <p class="card-description">Communication details and handover person</p>
+            <p class="card-description">
+              Communication details and handover person
+            </p>
           </div>
           <div class="card-content">
             <div class="form-row">
               <div class="form-group">
-                <label class="form-label" for="clientEmail">Company Email</label>
+                <label class="form-label" for="clientEmail"
+                  >Company Email</label
+                >
                 <input
                   class="form-input"
                   type="email"
@@ -593,7 +645,9 @@
                 />
               </div>
               <div class="form-group">
-                <label class="form-label" for="clientPhone">Company Phone</label>
+                <label class="form-label" for="clientPhone"
+                  >Company Phone</label
+                >
                 <input
                   class="form-input"
                   type="tel"
@@ -607,7 +661,9 @@
 
             <div class="form-row">
               <div class="form-group">
-                <label class="form-label" for="clientContactPerson">Contact Person for Handover</label>
+                <label class="form-label" for="clientContactPerson"
+                  >Contact Person for Handover</label
+                >
                 <input
                   class="form-input"
                   type="text"
@@ -619,7 +675,9 @@
                 />
               </div>
               <div class="form-group">
-                <label class="form-label" for="clientContactEmail">Contact Person Email</label>
+                <label class="form-label" for="clientContactEmail"
+                  >Contact Person Email</label
+                >
                 <input
                   class="form-input"
                   type="email"
@@ -641,8 +699,16 @@
           </div>
           <div class="card-content">
             <div class="form-group">
-              <label class="form-label" for="projectDescription">Project Description</label>
-              <textarea class="form-textarea" id="projectDescription" name="projectDescription" required placeholder="Detailed description of the project scope and deliverables">
+              <label class="form-label" for="projectDescription"
+                >Project Description</label
+              >
+              <textarea
+                class="form-textarea"
+                id="projectDescription"
+                name="projectDescription"
+                required
+                placeholder="Detailed description of the project scope and deliverables"
+              >
 Návrh a implementace kompletních webových stránek. Tato část díla zahrnuje:
 * Unikátní grafický návrh odpovídající vizuální identitě
 * Responzivní design optimalizovaný pro různá zařízení (mobily, tablety, počítače)
@@ -658,12 +724,15 @@ Návrh a implementace kompletních webových stránek. Tato část díla zahrnuj
 * Propojení se sociálními sítěmi včetně integrace sdílecích tlačítek
 * Optimalizace rychlosti načítání stránek
 * Implementace kontaktního formuláře s ochranou proti spamu
-* Základní školení pro správu obsahu v redakčním systému WordPress (2 hodiny)</textarea>
+* Základní školení pro správu obsahu v redakčním systému WordPress (2 hodiny)</textarea
+              >
             </div>
 
             <div class="form-row">
               <div class="form-group">
-                <label class="form-label" for="projectPrice">Project Price (CZK)</label>
+                <label class="form-label" for="projectPrice"
+                  >Project Price (CZK)</label
+                >
                 <input
                   class="form-input"
                   type="number"
@@ -675,7 +744,9 @@ Návrh a implementace kompletních webových stránek. Tato část díla zahrnuj
                 />
               </div>
               <div class="form-group">
-                <label class="form-label" for="advancePercent">Advance Payment (%)</label>
+                <label class="form-label" for="advancePercent"
+                  >Advance Payment (%)</label
+                >
                 <input
                   class="form-input"
                   type="number"
@@ -692,18 +763,24 @@ Návrh a implementace kompletních webových stránek. Tato část díla zahrnuj
 
             <div class="form-row">
               <div class="form-group">
-                <label class="form-label" for="completionDate">Project Completion Date</label>
+                <label class="form-label" for="completionDate"
+                  >Project Completion Date</label
+                >
                 <input
-                  class="form-input"
-                  type="date"
+                  class="form-input flatpickr-date"
+                  type="text"
                   id="completionDate"
                   name="completionDate"
+                  placeholder="Select completion date"
                   value=""
                   required
+                  readonly
                 />
               </div>
               <div class="form-group">
-                <label class="form-label" for="warrantyMonths">Warranty Period (months)</label>
+                <label class="form-label" for="warrantyMonths"
+                  >Warranty Period (months)</label
+                >
                 <input
                   class="form-input"
                   type="number"
@@ -724,11 +801,15 @@ Návrh a implementace kompletních webových stránek. Tato část díla zahrnuj
         <div class="card">
           <div class="card-header">
             <h3 class="card-title">Project Timeline</h3>
-            <p class="card-description">Define project phases with start and end dates</p>
+            <p class="card-description">
+              Define project phases with start and end dates
+            </p>
           </div>
           <div class="card-content">
             <div class="timeline-controls">
-              <h4 style="margin: 0; font-size: 1rem; font-weight: 500;">Timeline Phases</h4>
+              <h4 style="margin: 0; font-size: 1rem; font-weight: 500">
+                Timeline Phases
+              </h4>
             </div>
 
             <div id="timelineContainer">
@@ -753,22 +834,33 @@ Návrh a implementace kompletních webových stránek. Tato část díla zahrnuj
                       name="timelineRange[]"
                       placeholder="Select date range"
                       required
-                      style="min-width: 200px;"
+                      style="min-width: 200px"
                     />
-                    <input type="hidden" name="timelineStart[]" value="">
-                    <input type="hidden" name="timelineEnd[]" value="">
+                    <input type="hidden" name="timelineStart[]" value="" />
+                    <input type="hidden" name="timelineEnd[]" value="" />
                   </div>
-                  <div class="form-group" style="display: flex; align-items: end;">
-                    <button type="button" class="btn btn-destructive btn-sm" onclick="removeTimelineItem(this)">
+                  <div
+                    class="form-group"
+                    style="display: flex; align-items: end"
+                  >
+                    <button
+                      type="button"
+                      class="btn btn-destructive btn-sm"
+                      onclick="removeTimelineItem(this)"
+                    >
                       Remove
                     </button>
                   </div>
                 </div>
               </div>
             </div>
-            
-            <div class="timeline-controls" style="margin-top: 1rem;">
-              <button type="button" class="btn btn-outline btn-sm" onclick="addTimelineItem()">
+
+            <div class="timeline-controls" style="margin-top: 1rem">
+              <button
+                type="button"
+                class="btn btn-outline btn-sm"
+                onclick="addTimelineItem()"
+              >
                 Add Phase
               </button>
             </div>
@@ -784,7 +876,9 @@ Návrh a implementace kompletních webových stránek. Tato část díla zahrnuj
           <div class="card-content">
             <div class="form-row">
               <div class="form-group">
-                <label class="form-label" for="contractLocation">Contract Location</label>
+                <label class="form-label" for="contractLocation"
+                  >Contract Location</label
+                >
                 <input
                   class="form-input"
                   type="text"
@@ -796,32 +890,56 @@ Návrh a implementace kompletních webových stránek. Tato část díla zahrnuj
                 />
               </div>
               <div class="form-group">
-                <label class="form-label" for="contractDate">Contract Date</label>
-                <input 
-                  class="form-input"
-                  type="date" 
-                  id="contractDate" 
-                  name="contractDate" 
-                  required 
+                <label class="form-label" for="contractDate"
+                  >Contract Date</label
+                >
+                <input
+                  class="form-input flatpickr-date"
+                  type="text"
+                  id="contractDate"
+                  name="contractDate"
+                  placeholder="Select contract date"
+                  required
+                  readonly
                 />
               </div>
             </div>
 
             <!-- Action Buttons -->
             <div class="action-buttons">
-              <button type="button" class="btn btn-outline" onclick="generatePreview()">
+              <button
+                type="button"
+                class="btn btn-outline"
+                onclick="generatePreview()"
+              >
                 Preview Contract
               </button>
-              <button type="button" class="btn btn-primary" onclick="generateMarkdown()">
+              <button
+                type="button"
+                class="btn btn-primary"
+                onclick="generateMarkdown()"
+              >
                 Download Markdown
               </button>
-              <button type="button" class="btn btn-secondary" onclick="copyMarkdownToClipboard()">
+              <button
+                type="button"
+                class="btn btn-secondary"
+                onclick="copyMarkdownToClipboard()"
+              >
                 Copy Markdown
               </button>
-              <button type="button" class="btn btn-secondary" onclick="downloadContract()">
+              <button
+                type="button"
+                class="btn btn-secondary"
+                onclick="downloadContract()"
+              >
                 Download HTML
               </button>
-              <button type="button" class="btn btn-secondary" onclick="copyToClipboard()">
+              <button
+                type="button"
+                class="btn btn-secondary"
+                onclick="copyToClipboard()"
+              >
                 Copy Text
               </button>
             </div>

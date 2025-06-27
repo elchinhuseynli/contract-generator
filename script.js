@@ -63,15 +63,44 @@ function formatName(name) {
         .join(' ');
 }
 
-// Global formatDate function for simple date formatting
+// Global formatDate function for EU date formatting (DD-MM-YYYY)
 function formatDate(dateStr) {
     if (!dateStr) return '';
+    
+    // Parse the date string properly to avoid timezone issues
+    const dateParts = dateStr.split('-');
+    if (dateParts.length === 3) {
+        // Create date from components to avoid timezone offset issues
+        const year = parseInt(dateParts[0], 10);
+        const month = parseInt(dateParts[1], 10) - 1; // Month is 0-indexed
+        const day = parseInt(dateParts[2], 10);
+        const date = new Date(year, month, day);
+        
+        const dd = String(date.getDate()).padStart(2, '0');
+        const mm = String(date.getMonth() + 1).padStart(2, '0');
+        const yyyy = date.getFullYear();
+        
+        return `${dd}-${mm}-${yyyy}`;
+    }
+    
+    // Fallback for other formats
     const date = new Date(dateStr);
-    return date.toLocaleDateString('cs-CZ', {
-        day: '2-digit',
-        month: '2-digit', 
-        year: 'numeric'
-    });
+    const dd = String(date.getDate()).padStart(2, '0');
+    const mm = String(date.getMonth() + 1).padStart(2, '0');
+    const yyyy = date.getFullYear();
+    
+    return `${dd}-${mm}-${yyyy}`;
+}
+
+// Helper function to format date for storage (Y-m-d format for backend compatibility)
+function formatDateForStorage(date) {
+    if (!date) return '';
+    
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    
+    return `${year}-${month}-${day}`;
 }
 
 function addTimelineItem() {
@@ -84,9 +113,11 @@ function addTimelineItem() {
         const lastItem = existingItems[existingItems.length - 1];
         const lastEndDateInput = lastItem.querySelector('input[name="timelineEnd[]"]');
         if (lastEndDateInput && lastEndDateInput.value) {
-            const lastEndDate = new Date(lastEndDateInput.value);
+            // Parse date properly to avoid timezone issues
+            const dateParts = lastEndDateInput.value.split('-');
+            const lastEndDate = new Date(parseInt(dateParts[0]), parseInt(dateParts[1]) - 1, parseInt(dateParts[2]));
             lastEndDate.setDate(lastEndDate.getDate() + 1);
-            nextStartDate = lastEndDate.toISOString().split('T')[0];
+            nextStartDate = formatDateForStorage(lastEndDate);
         }
     }
     
@@ -160,31 +191,70 @@ function initializeDateRangePicker(input, defaultStartDate = '') {
     try {
         const fp = flatpickr(input, {
             mode: "range",
-            dateFormat: "Y-m-d",
+            dateFormat: "d-m-Y",
+            altInput: true,
+            altFormat: "d-m-Y",
             defaultDate: startDate && endDate ? [startDate, endDate] : startDate ? [startDate] : [],
             minDate: startDate || "today",
-            allowInput: true,
+            allowInput: false,
             clickOpens: true,
             disableMobile: false,
+            parseDate: function(datestr, format) {
+                // Handle both Y-m-d and d-m-Y formats
+                if (datestr.includes('-')) {
+                    const parts = datestr.split('-');
+                    if (parts.length === 3) {
+                        if (parts[0].length === 4) {
+                            // Y-m-d format
+                            return new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+                        } else {
+                            // d-m-Y format
+                            return new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
+                        }
+                    }
+                }
+                return new Date(datestr);
+            },
             onChange: function(selectedDates, dateStr, instance) {
                 // Only update if this is a user interaction with 2 dates selected
                 if (selectedDates.length === 2) {
-                    const start = selectedDates[0].toISOString().split('T')[0];
-                    const end = selectedDates[1].toISOString().split('T')[0];
+                    // Use local date methods to avoid timezone issues
+                    const start = formatDateForStorage(selectedDates[0]);
+                    const end = formatDateForStorage(selectedDates[1]);
                     
                     if (startDateInput) startDateInput.value = start;
                     if (endDateInput) endDateInput.value = end;
                     
-                    input.value = `${formatDate(start)} - ${formatDate(end)}`;
+                    const displayValue = `${formatDate(start)} - ${formatDate(end)}`;
+                    input.value = displayValue;
+                    
+                    // Store the value to prevent it from disappearing
+                    input.setAttribute('data-value', displayValue);
                     
                     // Update subsequent phases only after user completes selection
                     setTimeout(() => updatePhaseSequence(), 100);
+                }
+            },
+            onClose: function(selectedDates, dateStr, instance) {
+                // Ensure value persists after closing
+                if (selectedDates.length === 2) {
+                    const start = formatDateForStorage(selectedDates[0]);
+                    const end = formatDateForStorage(selectedDates[1]);
+                    const displayValue = `${formatDate(start)} - ${formatDate(end)}`;
+                    input.value = displayValue;
+                    input.setAttribute('data-value', displayValue);
                 }
             },
             onReady: function(selectedDates, dateStr, instance) {
                 // Apply dark mode styles if needed
                 if (document.documentElement.getAttribute('data-theme') === 'dark') {
                     instance.calendarContainer.classList.add('flatpickr-dark');
+                }
+                
+                // Restore value if it exists
+                const storedValue = input.getAttribute('data-value');
+                if (storedValue && !input.value) {
+                    input.value = storedValue;
                 }
             }
         });
@@ -195,6 +265,82 @@ function initializeDateRangePicker(input, defaultStartDate = '') {
         return fp;
     } catch (error) {
         console.error('Error creating flatpickr instance:', error);
+        return null;
+    }
+}
+
+function initializeSingleDatePicker(input, defaultDate = '') {
+    if (!input) return;
+    
+    // Check if flatpickr is available
+    if (typeof flatpickr === 'undefined') {
+        console.error('Flatpickr is not loaded!');
+        return;
+    }
+    
+    try {
+        const fp = flatpickr(input, {
+            dateFormat: "d-m-Y",
+            altInput: true,
+            altFormat: "d-m-Y",
+            defaultDate: defaultDate || input.value || '',
+            minDate: "today",
+            allowInput: false,
+            clickOpens: true,
+            disableMobile: false,
+            parseDate: function(datestr, format) {
+                // Handle both Y-m-d and d-m-Y formats
+                if (datestr.includes('-')) {
+                    const parts = datestr.split('-');
+                    if (parts.length === 3) {
+                        if (parts[0].length === 4) {
+                            // Y-m-d format
+                            return new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+                        } else {
+                            // d-m-Y format
+                            return new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
+                        }
+                    }
+                }
+                return new Date(datestr);
+            },
+            onChange: function(selectedDates, dateStr, instance) {
+                if (selectedDates.length === 1) {
+                    const selectedDate = formatDateForStorage(selectedDates[0]);
+                    input.value = selectedDate;
+                    
+                    // Store the value to prevent it from disappearing
+                    input.setAttribute('data-value', selectedDate);
+                }
+            },
+            onClose: function(selectedDates, dateStr, instance) {
+                // Ensure value persists after closing
+                if (selectedDates.length === 1) {
+                    const selectedDate = formatDateForStorage(selectedDates[0]);
+                    input.value = selectedDate;
+                    input.setAttribute('data-value', selectedDate);
+                }
+            },
+            onReady: function(selectedDates, dateStr, instance) {
+                // Apply dark mode styles if needed
+                if (document.documentElement.getAttribute('data-theme') === 'dark') {
+                    instance.calendarContainer.classList.add('flatpickr-dark');
+                }
+                
+                // Restore value if it exists
+                const storedValue = input.getAttribute('data-value');
+                if (storedValue && !input.value) {
+                    input.value = storedValue;
+                }
+            }
+        });
+        
+        // Store reference to flatpickr instance
+        input._flatpickr = fp;
+        
+        return fp;
+    } catch (error) {
+        console.error('Error creating single date flatpickr instance:', error);
         return null;
     }
 }
@@ -228,9 +374,11 @@ function updatePhaseSequence() {
         const currentDateRangePicker = item.querySelector('.date-range-picker');
         
         if (prevEndDateInput && prevEndDateInput.value) {
-            const prevEndDate = new Date(prevEndDateInput.value);
+            // Parse date properly to avoid timezone issues
+            const dateParts = prevEndDateInput.value.split('-');
+            const prevEndDate = new Date(parseInt(dateParts[0]), parseInt(dateParts[1]) - 1, parseInt(dateParts[2]));
             prevEndDate.setDate(prevEndDate.getDate() + 1);
-            const newStartDate = prevEndDate.toISOString().split('T')[0];
+            const newStartDate = formatDateForStorage(prevEndDate);
             
             // Only update if different to avoid infinite loops
             if (currentStartDateInput && currentStartDateInput.value !== newStartDate) {
@@ -967,14 +1115,37 @@ window.addEventListener('load', function() {
 });
 
 function initializeDefaultDates() {
+    // Set default dates
+    const today = new Date();
+    
     // Set completion date to 1 month from today if not set
     const completionDateInput = document.getElementById('completionDate');
     if (completionDateInput && !completionDateInput.value) {
-        const today = new Date();
         const completionDate = new Date(today);
         completionDate.setMonth(today.getMonth() + 1);
-        completionDateInput.value = completionDate.toISOString().split('T')[0];
+        const completionDateStr = formatDateForStorage(completionDate);
+        completionDateInput.value = completionDateStr;
     }
+    
+    // Set contract date to today if not set
+    const contractDateInput = document.getElementById('contractDate');
+    if (contractDateInput && !contractDateInput.value) {
+        contractDateInput.value = formatDateForStorage(today);
+    }
+    
+    // Initialize all single date pickers
+    initializeDatePickers();
+}
+
+function initializeDatePickers() {
+    // Initialize all .flatpickr-date inputs as single date pickers
+    const singleDateInputs = document.querySelectorAll('.flatpickr-date');
+    
+    singleDateInputs.forEach((input) => {
+        if (!input._flatpickr) {
+            initializeSingleDatePicker(input);
+        }
+    });
 }
 
 function initializeExistingTimelineItems() {
@@ -991,12 +1162,12 @@ function initializeExistingTimelineItems() {
                 // For first item, use today as start date
                 if (index === 0) {
                     const today = new Date();
-                    const startDate = today.toISOString().split('T')[0];
+                    const startDate = formatDateForStorage(today);
                     
                     // Default end date is 2 weeks from start
                     const endDate = new Date(today);
                     endDate.setDate(today.getDate() + 14);
-                    const endDateStr = endDate.toISOString().split('T')[0];
+                    const endDateStr = formatDateForStorage(endDate);
                     
                     startDateInput.value = startDate;
                     endDateInput.value = endDateStr;
