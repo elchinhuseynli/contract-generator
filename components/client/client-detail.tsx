@@ -13,12 +13,20 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
-import { lookupAres, type VatStatus } from "@/lib/ares";
+import { lookupAres, type VatRegistration } from "@/lib/ares";
 import { updateClient, type ClientInput } from "@/lib/db/actions";
 import { formatCZK } from "@/lib/contract/format";
+import { VAT_MODE_LABELS, type VatMode } from "@/lib/contract/types";
 import type { ClientRow, ContractListItem } from "@/lib/db/types";
 import { StatusBadge } from "@/components/contract/status-badge";
 import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Card,
   CardContent,
@@ -76,10 +84,11 @@ export function ClientDetail({
     contact_person: client.contact_person ?? "",
     contact_email: client.contact_email ?? "",
     data_box: client.data_box ?? "",
+    vat_mode: client.vat_mode ?? null,
   });
   const [saving, setSaving] = React.useState(false);
   const [aresLoading, setAresLoading] = React.useState(false);
-  const [vat, setVat] = React.useState<VatStatus | null>(null);
+  const [vat, setVat] = React.useState<VatRegistration | null>(null);
   const [vatLoading, setVatLoading] = React.useState(false);
 
   function set<K extends keyof ClientInput>(k: K, val: string) {
@@ -116,7 +125,10 @@ export function ClientDetail({
           dic: r.data.dic || p.dic,
           representative: r.data.representative || p.representative,
         }));
-        setVat(r.data.vatStatus);
+        setVat(r.data.vatRegistration);
+        if (r.data.vatRegistration === "none") {
+          setV((p) => ({ ...p, vat_mode: "nonpayer" }));
+        }
         toast.success("Aktualizováno z ARES — nezapomeňte uložit");
       } else {
         toast.error(r.error || "Nepodařilo se načíst z ARES");
@@ -136,8 +148,14 @@ export function ClientDetail({
     setVatLoading(true);
     try {
       const r = await lookupAres(v.ico);
-      if (r.success) setVat(r.data.vatStatus);
-      else toast.error(r.error || "Nepodařilo se ověřit");
+      if (r.success) {
+        setVat(r.data.vatRegistration);
+        if (r.data.vatRegistration === "none") {
+          setV((p) => ({ ...p, vat_mode: "nonpayer" }));
+        }
+      } else {
+        toast.error(r.error || "Nepodařilo se ověřit");
+      }
     } catch {
       toast.error("Chyba při ověření");
     } finally {
@@ -246,6 +264,47 @@ export function ClientDetail({
               />
             </Field>
 
+            <Field
+              label="Status DPH"
+              hint="ARES rozliší jen registrováno/neregistrováno — plátce vs. identifikovaná osoba vyberte ručně."
+            >
+              <div className="flex flex-wrap items-center gap-2">
+                <Select
+                  items={VAT_MODE_LABELS}
+                  value={v.vat_mode ?? undefined}
+                  onValueChange={(val) =>
+                    setV((p) => ({ ...p, vat_mode: val as VatMode }))
+                  }
+                >
+                  <SelectTrigger className="w-56">
+                    <SelectValue placeholder="Neuvedeno" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {(Object.keys(VAT_MODE_LABELS) as VatMode[]).map((m) => (
+                      <SelectItem key={m} value={m}>
+                        {VAT_MODE_LABELS[m]}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={verifyVat}
+                  disabled={vatLoading}
+                >
+                  {vatLoading ? (
+                    <Loader2 className="size-4 animate-spin" />
+                  ) : (
+                    <ShieldQuestion className="size-4" />
+                  )}
+                  Zjistit z ARES
+                </Button>
+                <VatBadge status={vat} />
+              </div>
+            </Field>
+
             <div className="flex flex-wrap items-center gap-3 border-t pt-4">
               <Button type="submit" disabled={saving}>
                 {saving ? (
@@ -255,20 +314,6 @@ export function ClientDetail({
                 )}
                 Uložit změny
               </Button>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={verifyVat}
-                disabled={vatLoading}
-              >
-                {vatLoading ? (
-                  <Loader2 className="size-4 animate-spin" />
-                ) : (
-                  <ShieldQuestion className="size-4" />
-                )}
-                Ověřit plátce DPH
-              </Button>
-              <VatBadge status={vat} />
             </div>
           </form>
         </CardContent>
@@ -330,30 +375,28 @@ export function ClientDetail({
   );
 }
 
-function VatBadge({ status }: { status: VatStatus | null }) {
+function VatBadge({ status }: { status: VatRegistration | null }) {
   if (!status) return null;
-  if (status === "payer")
+  if (status === "registered")
     return (
-      <span className="inline-flex items-center gap-1.5 rounded-md bg-status-signed/10 px-2.5 py-1 text-sm text-status-signed-fg">
+      <span className="inline-flex items-center gap-1.5 rounded-md bg-status-sent/10 px-2.5 py-1 text-sm text-status-sent-fg">
         <ShieldCheck className="size-4" />
-        Plátce DPH
+        ARES: registrováno k DPH (plátce / IO)
       </span>
     );
   if (status === "former")
     return (
       <span className="inline-flex items-center gap-1.5 rounded-md bg-status-draft/10 px-2.5 py-1 text-sm text-status-draft-fg">
         <ShieldAlert className="size-4" />
-        Bývalý plátce DPH
+        ARES: bývalá registrace DPH
       </span>
     );
-  if (status === "nonpayer")
+  if (status === "none")
     return (
       <span className="inline-flex items-center gap-1.5 rounded-md bg-muted px-2.5 py-1 text-sm text-muted-foreground">
         <ShieldQuestion className="size-4" />
-        Neplátce DPH
+        ARES: neregistrováno (neplátce)
       </span>
     );
-  return (
-    <span className="text-sm text-muted-foreground">Stav DPH neznámý</span>
-  );
+  return <span className="text-sm text-muted-foreground">Stav neznámý</span>;
 }

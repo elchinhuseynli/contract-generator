@@ -7,6 +7,7 @@ import {
   sumPriceItems,
   type ContractData,
   type ContractStatus,
+  type VatMode,
 } from "@/lib/contract/types";
 
 async function clientFromData(
@@ -219,6 +220,7 @@ export type OrgSettingsInput = {
   representative: string;
   bank_name: string;
   account_number: string;
+  vat_mode: VatMode;
 };
 
 export async function updateOrgSettings(values: OrgSettingsInput) {
@@ -243,6 +245,7 @@ export type ClientInput = {
   contact_person: string | null;
   contact_email: string | null;
   data_box: string | null;
+  vat_mode: VatMode | null;
 };
 
 export async function updateClient(id: string, values: ClientInput) {

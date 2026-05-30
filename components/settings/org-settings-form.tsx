@@ -17,6 +17,14 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { VAT_MODE_LABELS, type VatMode } from "@/lib/contract/types";
 
 const FIELDS: { key: keyof OrgSettingsInput; label: string }[] = [
   { key: "company_name", label: "Název společnosti" },
@@ -36,6 +44,7 @@ export function OrgSettingsForm({ org }: { org: OrgSettingsRow }) {
     representative: org.representative,
     bank_name: org.bank_name,
     account_number: org.account_number,
+    vat_mode: org.vat_mode,
   });
   const [saving, setSaving] = React.useState(false);
 
@@ -77,6 +86,32 @@ export function OrgSettingsForm({ org }: { org: OrgSettingsRow }) {
               </div>
             ))}
           </div>
+
+          <div className="space-y-2">
+            <Label>Status DPH</Label>
+            <Select
+              items={VAT_MODE_LABELS}
+              value={values.vat_mode}
+              onValueChange={(v) =>
+                setValues((p) => ({ ...p, vat_mode: v as VatMode }))
+              }
+            >
+              <SelectTrigger className="w-full sm:w-72">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {(Object.keys(VAT_MODE_LABELS) as VatMode[]).map((m) => (
+                  <SelectItem key={m} value={m}>
+                    {VAT_MODE_LABELS[m]}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              Ovlivní formulaci o DPH v čl. VI smlouvy.
+            </p>
+          </div>
+
           <Button type="submit" disabled={saving}>
             {saving ? (
               <Loader2 className="size-4 animate-spin" />

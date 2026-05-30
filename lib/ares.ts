@@ -1,8 +1,13 @@
 // ARES = Czech business registry. We look up a company by IČO and pre-fill
 // the client fields. Shared types + helpers for both the route and the form.
 
-/** DPH (VAT) registration status, derived from ARES seznamRegistraci.stavZdrojeDph. */
-export type VatStatus = "payer" | "former" | "nonpayer" | "unknown";
+/**
+ * DPH registration from ARES (seznamRegistraci.stavZdrojeDph). This only tells
+ * whether the entity is registered — it CANNOT distinguish a plátce DPH from an
+ * identifikovaná osoba (both show as registered). The precise status is set
+ * manually as VatMode.
+ */
+export type VatRegistration = "registered" | "former" | "none" | "unknown";
 
 export type AresCompany = {
   ico: string;
@@ -10,7 +15,7 @@ export type AresCompany = {
   address: string;
   dic: string;
   representative: string;
-  vatStatus: VatStatus;
+  vatRegistration: VatRegistration;
 };
 
 export type AresResult =

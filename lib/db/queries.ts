@@ -110,6 +110,7 @@ export async function getOrgSettings(): Promise<OrgSettingsRow> {
       representative: DEFAULT_CONTRACTOR.representative,
       bank_name: DEFAULT_CONTRACTOR.bankName,
       account_number: DEFAULT_CONTRACTOR.accountNumber,
+      vat_mode: DEFAULT_CONTRACTOR.vatMode,
       updated_at: "",
     }
   );

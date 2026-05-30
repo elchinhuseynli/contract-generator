@@ -71,6 +71,13 @@ export function buildContractDoc(
   const total = sumPriceItems(data.priceItems);
   const words = numberToCzechWords(total);
 
+  const vatSentence =
+    contractor.vatMode === "payer"
+      ? "Uvedená cena je bez DPH; k ceně bude připočtena daň z přidané hodnoty v zákonné sazbě."
+      : contractor.vatMode === "identified"
+        ? "Zhotovitel není plátcem DPH; je identifikovanou osobou ve smyslu § 6g a násl. zákona č. 235/2004 Sb., o dani z přidané hodnoty, ve znění pozdějších předpisů."
+        : "Zhotovitel není plátcem DPH.";
+
   const objednatelLines: DocDetail[] = [
     { label: "Sídlo", value: data.clientAddress },
     { label: "IČO", value: data.clientICO },
@@ -214,7 +221,7 @@ export function buildContractDoc(
           {
             kind: "clauses",
             items: [
-              `Objednatel se zavazuje za dílo zaplatit celkovou smluvní cenu ve výši ${formatCZK(total)} (slovy: ${words} korun českých). Zhotovitel není plátcem DPH.`,
+              `Objednatel se zavazuje za dílo zaplatit celkovou smluvní cenu ve výši ${formatCZK(total)} (slovy: ${words} korun českých). ${vatSentence}`,
               "Cena dle předchozího odstavce obsahuje veškeré náklady pro realizaci díla včetně nákladů souvisejících. Kalkulace ceny je uvedena v příloze B, která je nedílnou součásti této smlouvy.",
               "Cena za dílo je pevná po celou dobu realizace díla a zahrnuje veškeré náklady zhotovitele související s realizací díla. Cena za dílo je stanovena jako nejvýše přípustná. Cena za dílo je překročitelná pouze v případě, dojde-li v průběhu realizace ke změně daňových předpisů s dopadem na cenu díla. Objednatel jiné překročení ceny díla nepřipouští.",
               `Objednatel je povinen zaplatit zálohu ve výši ${data.advancePercent} % z ceny díla, které je předmětem podle této smlouvy. Tuto zálohu uhradí na účet zhotovitele číslo ${contractor.accountNumber} do tří dnů od podpisu této smlouvy.`,

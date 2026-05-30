@@ -53,7 +53,20 @@ export type ContractData = {
   contractDate: string; // ISO date
 };
 
-/** Zhotovitel — the supplier side (Flex Digital). Editable via org_settings in Phase 2. */
+/**
+ * DPH status. "identified" = identifikovaná osoba (has a DIČ for EU
+ * transactions but is NOT a domestic VAT payer — distinct from both
+ * plátce and neplátce). ARES cannot distinguish payer from identified.
+ */
+export type VatMode = "payer" | "identified" | "nonpayer";
+
+export const VAT_MODE_LABELS: Record<VatMode, string> = {
+  payer: "Plátce DPH",
+  identified: "Identifikovaná osoba",
+  nonpayer: "Neplátce DPH",
+};
+
+/** Zhotovitel — the supplier side (Flex Digital). Editable via org_settings. */
 export type ContractorInfo = {
   companyName: string;
   address: string;
@@ -61,6 +74,7 @@ export type ContractorInfo = {
   representative: string;
   bankName: string;
   accountNumber: string;
+  vatMode: VatMode;
 };
 
 export const DEFAULT_CONTRACTOR: ContractorInfo = {
@@ -70,6 +84,7 @@ export const DEFAULT_CONTRACTOR: ContractorInfo = {
   representative: "Elchin Huseynli",
   bankName: "Raiffeisenbank, a.s.",
   accountNumber: "2096701002/5500",
+  vatMode: "identified",
 };
 
 export const CONTRACT_STATUSES = [

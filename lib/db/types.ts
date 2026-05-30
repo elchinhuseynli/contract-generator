@@ -1,4 +1,9 @@
-import type { ContractData, ContractorInfo, ContractStatus } from "@/lib/contract/types";
+import type {
+  ContractData,
+  ContractorInfo,
+  ContractStatus,
+  VatMode,
+} from "@/lib/contract/types";
 
 export type ContractRow = {
   id: string;
@@ -36,6 +41,7 @@ export type ClientRow = {
   contact_person: string | null;
   contact_email: string | null;
   data_box: string | null;
+  vat_mode: VatMode | null;
   created_at: string;
   updated_at: string | null;
 };
@@ -48,6 +54,7 @@ export type OrgSettingsRow = {
   representative: string;
   bank_name: string;
   account_number: string;
+  vat_mode: VatMode;
   updated_at: string;
 };
 
@@ -59,6 +66,7 @@ export function orgToContractor(o: OrgSettingsRow): ContractorInfo {
     representative: o.representative,
     bankName: o.bank_name,
     accountNumber: o.account_number,
+    vatMode: o.vat_mode ?? "nonpayer",
   };
 }
 
