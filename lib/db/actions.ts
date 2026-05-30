@@ -231,3 +231,25 @@ export async function updateOrgSettings(values: OrgSettingsInput) {
   if (error) throw new Error(error.message);
   revalidatePath("/settings");
 }
+
+export type ClientInput = {
+  company: string;
+  address: string | null;
+  ico: string | null;
+  dic: string | null;
+  representative: string | null;
+  email: string | null;
+  phone: string | null;
+  contact_person: string | null;
+  contact_email: string | null;
+  data_box: string | null;
+};
+
+export async function updateClient(id: string, values: ClientInput) {
+  await requireUser();
+  const supabase = await createClient();
+  const { error } = await supabase.from("clients").update(values).eq("id", id);
+  if (error) throw new Error(error.message);
+  revalidatePath("/clients");
+  revalidatePath(`/clients/${id}`);
+}

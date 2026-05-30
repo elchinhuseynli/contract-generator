@@ -27,12 +27,17 @@ export type VersionRow = {
 export type ClientRow = {
   id: string;
   company: string;
+  address: string | null;
   ico: string | null;
   dic: string | null;
   representative: string | null;
   email: string | null;
+  phone: string | null;
   contact_person: string | null;
+  contact_email: string | null;
+  data_box: string | null;
   created_at: string;
+  updated_at: string | null;
 };
 
 export type OrgSettingsRow = {

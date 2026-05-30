@@ -38,10 +38,36 @@ export async function listClients(): Promise<ClientRow[]> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("clients")
-    .select("id, company, ico, dic, representative, email, contact_person, created_at")
+    .select("*")
     .order("company");
   if (error) throw new Error(error.message);
   return (data ?? []) as ClientRow[];
+}
+
+export async function getClient(id: string): Promise<ClientRow | null> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("clients")
+    .select("*")
+    .eq("id", id)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  return (data as ClientRow) ?? null;
+}
+
+export async function listContractsForClient(
+  clientId: string
+): Promise<ContractListItem[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("contracts")
+    .select(
+      "id, contract_number, client_id, client_name, status, total_price, current_version, created_by, created_at, updated_at"
+    )
+    .eq("client_id", clientId)
+    .order("updated_at", { ascending: false });
+  if (error) throw new Error(error.message);
+  return (data ?? []) as ContractListItem[];
 }
 
 export async function listContracts(): Promise<ContractListItem[]> {
