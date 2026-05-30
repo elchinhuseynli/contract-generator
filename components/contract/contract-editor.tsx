@@ -50,15 +50,22 @@ export function ContractEditor({
   contractor,
   initialValues,
   contractId,
+  suggestedNumber,
 }: {
   contractor: ContractorInfo;
   initialValues?: ContractFormValues;
   contractId?: string;
+  suggestedNumber?: string;
 }) {
   const router = useRouter();
   const form = useForm<ContractFormValues>({
     resolver: zodResolver(contractSchema),
-    defaultValues: initialValues ?? makeDefaultValues(),
+    defaultValues:
+      initialValues ??
+      {
+        ...makeDefaultValues(),
+        ...(suggestedNumber ? { contractNumber: suggestedNumber } : {}),
+      },
     mode: "onBlur",
   });
   const [saving, setSaving] = React.useState(false);
@@ -170,8 +177,8 @@ export function ContractEditor({
               Text
             </Button>
           </div>
-          <div className="flex-1 overflow-y-auto bg-background p-6">
-            <ContractPreview ref={previewRef} markdown={markdown} />
+          <div className="flex-1 overflow-y-auto bg-muted/30 p-6">
+            <ContractPreview ref={previewRef} data={data} contractor={contractor} />
           </div>
         </div>
       </div>

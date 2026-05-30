@@ -1,16 +1,21 @@
 "use client";
 
 import * as React from "react";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
 import { Printer } from "lucide-react";
 
-import { stripHeadingAnchors } from "@/lib/contract/export";
+import { StyledContractDocument } from "@/lib/contract/document";
+import type { ContractData, ContractorInfo } from "@/lib/contract/types";
 import { Button } from "@/components/ui/button";
 
-// Forced-light, print-optimized rendering of a contract. Auto-opens the print
-// dialog so the user can "Save as PDF". Toolbar is hidden when printing.
-export function PrintDocument({ markdown }: { markdown: string }) {
+// Print-optimized contract: auto-opens the print dialog so the user can
+// "Save as PDF". Toolbar is hidden when printing.
+export function PrintDocument({
+  data,
+  contractor,
+}: {
+  data: ContractData;
+  contractor: ContractorInfo;
+}) {
   React.useEffect(() => {
     const t = setTimeout(() => window.print(), 800);
     return () => clearTimeout(t);
@@ -28,21 +33,8 @@ export function PrintDocument({ markdown }: { markdown: string }) {
         </Button>
       </div>
 
-      <div className="mx-auto max-w-[820px] bg-white p-12 text-zinc-900 shadow-sm print:max-w-none print:p-0 print:shadow-none">
-        <div
-          className={[
-            "prose prose-zinc max-w-none font-serif",
-            "prose-h1:text-center prose-h1:text-2xl",
-            "prose-h2:mt-8 prose-h2:border-b prose-h2:border-zinc-300 prose-h2:pb-1 prose-h2:text-lg",
-            "[&_table]:w-full [&_table]:border-collapse",
-            "[&_th]:border [&_th]:border-zinc-300 [&_th]:bg-zinc-100 [&_th]:px-3 [&_th]:py-2 [&_th]:text-left",
-            "[&_td]:border [&_td]:border-zinc-300 [&_td]:px-3 [&_td]:py-2 [&_td]:align-top",
-          ].join(" ")}
-        >
-          <ReactMarkdown remarkPlugins={[remarkGfm]}>
-            {stripHeadingAnchors(markdown)}
-          </ReactMarkdown>
-        </div>
+      <div className="mx-auto max-w-[820px] bg-white p-12 shadow-sm print:max-w-none print:p-0 print:shadow-none">
+        <StyledContractDocument data={data} contractor={contractor} />
       </div>
     </div>
   );

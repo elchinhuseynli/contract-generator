@@ -19,6 +19,21 @@ export async function listVersions(contractId: string): Promise<VersionRow[]> {
   return (data ?? []) as VersionRow[];
 }
 
+/** Next sequential contract number for the current year, e.g. "2026-003". */
+export async function getNextContractNumber(): Promise<string> {
+  const year = new Date().getFullYear();
+  const supabase = await createClient();
+  const { data } = await supabase.from("contracts").select("contract_number");
+
+  const re = new RegExp(`^${year}-0*(\\d+)`);
+  let max = 0;
+  for (const row of data ?? []) {
+    const m = (row.contract_number as string)?.match(re);
+    if (m) max = Math.max(max, parseInt(m[1], 10));
+  }
+  return `${year}-${String(max + 1).padStart(3, "0")}`;
+}
+
 export async function listClients(): Promise<ClientRow[]> {
   const supabase = await createClient();
   const { data, error } = await supabase

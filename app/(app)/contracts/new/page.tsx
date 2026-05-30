@@ -1,10 +1,13 @@
-import { getOrgSettings } from "@/lib/db/queries";
+import { getNextContractNumber, getOrgSettings } from "@/lib/db/queries";
 import { orgToContractor } from "@/lib/db/types";
 import { PageHeader } from "@/components/page-header";
 import { ContractEditor } from "@/components/contract/contract-editor";
 
 export default async function NewContractPage() {
-  const org = await getOrgSettings();
+  const [org, suggestedNumber] = await Promise.all([
+    getOrgSettings(),
+    getNextContractNumber(),
+  ]);
 
   return (
     <>
@@ -12,7 +15,10 @@ export default async function NewContractPage() {
         title="Nová smlouva"
         description="Smlouva o dílo · živý náhled vpravo"
       />
-      <ContractEditor contractor={orgToContractor(org)} />
+      <ContractEditor
+        contractor={orgToContractor(org)}
+        suggestedNumber={suggestedNumber}
+      />
     </>
   );
 }
