@@ -1,87 +1,64 @@
-# Contract Generator
+# Contract DMS
 
-A web application that generates Czech work contracts (Smlouva o dílo) with Google Docs integration.
+Generate, manage, and export Czech work contracts (**Smlouva o dílo**) for Flex Digital Agency — with ARES company lookup, a live document preview, a full document management system, status tracking, versioning, and PDF export.
+
+## Stack
+
+- **Next.js 16** (App Router) + **React 19** + **TypeScript**
+- **Tailwind CSS v4** + **shadcn/ui** (base-ui registry) — design system shared with the Flex Agency Help Desk (indigo accent, Inter + JetBrains Mono)
+- **Supabase** — Postgres + Auth + Row-Level Security
+- **Vercel** for hosting
 
 ## Features
 
-- **Dynamic Form**: Fill in contract details with a user-friendly web interface
-- **Live Preview**: See how your contract will look before generating
-- **Google Docs Integration**: Automatically create a Google Docs document with the contract
-- **Variable Fields**: All key contract information is customizable:
-  - Contract number and year
-  - Client information (company, address, IČO, DIČ, representative)
-  - Project details and description
-  - Pricing and payment terms
-  - Timeline with multiple phases
-  - Warranty period
-  - Contract location and date
+- **Generator** — multi-section form with [ARES](https://ares.gov.cz) lookup by IČO, editable price line items (Příloha B), editable standard provisions (Příloha A), a dynamic timeline, and a live serif document preview.
+- **Document management** — save, list, search/filter, edit, duplicate, and delete contracts.
+- **Status pipeline** — Koncept → Odesláno → Podepsáno → Archivováno.
+- **Versioning** — every save snapshots a version; restore any earlier one.
+- **PDF export** — a print-ready view (`/print/[id]`) that opens the browser's "Save as PDF".
+- **Settings** — the Zhotovitel (Flex Digital) details are editable and flow into every contract.
 
-## Setup Instructions
-
-### 1. Install Dependencies
+## Local development
 
 ```bash
 npm install
+cp .env.example .env.local   # then fill in your Supabase values
+npm run dev                  # http://localhost:3000
 ```
 
-### 2. Set up Google Docs API
+### Environment variables
 
-1. Go to the [Google Cloud Console](https://console.cloud.google.com/)
-2. Create a new project or select an existing one
-3. Enable the Google Docs API and Google Drive API
-4. Create credentials (OAuth 2.0 Client ID) for a web application
-5. Download the credentials as `credentials.json` and place it in the project root
-6. Add `http://localhost:3000/auth/callback` to your authorized redirect URIs
+| Variable | Description |
+|---|---|
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Supabase publishable (anon) key |
 
-### 3. Run the Application
+## Database
 
-```bash
-npm start
+The schema lives in Supabase (`profiles`, `org_settings`, `clients`, `contracts`, `contract_versions`) with RLS enabled. Tables were created via migrations on the Supabase project.
+
+> **Security:** RLS grants every *authenticated* user full access (team-shared model). Before exposing the URL publicly, disable open sign-ups in **Supabase → Authentication** (invite-only), or add an approval gate. Auth emails are sent via Resend SMTP.
+
+## Deployment (Vercel)
+
+1. Connect the repo to a Vercel project (Next.js is auto-detected — no `vercel.json` needed).
+2. Add the two environment variables above in **Project Settings → Environment Variables**.
+3. Deploy. The middleware (`proxy.ts`) handles auth/session refresh at the edge.
+
+## Project structure
+
+```
+app/
+  (app)/            # authenticated shell (sidebar) — dashboard, contracts, clients, settings
+  login/            # auth
+  print/[id]/       # print-to-PDF view
+  api/ares/[ico]/   # ARES proxy
+components/contract # form, preview, editor, table, version history, status
+lib/
+  contract/         # template (single source of truth), schema, types, export
+  db/               # queries + server actions
+  supabase/         # client / server / middleware helpers
+legacy/             # the original v1 app (HTML/JS/Express), archived
 ```
 
-### 4. Authorize Google Docs Access
-
-1. Visit `http://localhost:3000/auth`
-2. Complete the Google OAuth flow
-3. You're now ready to generate contracts!
-
-## Usage
-
-1. Open `http://localhost:3000` in your browser
-2. Fill in the contract details:
-   - Contract information
-   - Client details
-   - Project description and pricing
-   - Timeline phases
-   - Contract location and date
-3. Click "Preview Contract" to see how it will look
-4. Click "Generate Google Doc" to create the document in Google Docs
-
-## Default Template
-
-The application comes pre-configured with your Flex Digital Agency template, including:
-- Your company information (name, address, IČO, bank account)
-- Standard contract clauses in Czech
-- Professional formatting
-- All legal sections from your original contract
-
-## Customization
-
-- Modify the HTML form in `index.html` to add/remove fields
-- Update the contract template in `script.js` and `server.js`
-- Change styling in the CSS section of `index.html`
-
-## File Structure
-
-- `index.html` - Main web interface
-- `script.js` - Frontend JavaScript for form handling and preview
-- `server.js` - Backend server with Google Docs integration
-- `package.json` - Node.js dependencies
-- `credentials.json` - Google API credentials (you need to create this)
-- `token.json` - OAuth token (automatically created after authorization)
-
-## Security Notes
-
-- Keep your `credentials.json` and `token.json` files secure
-- Don't commit these files to version control
-- The application runs locally and doesn't store data externally
+The v1 app is preserved in [`legacy/`](legacy/).
