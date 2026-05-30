@@ -55,12 +55,24 @@ export async function GET(
       address: "",
       dic: "",
       representative: "",
+      vatStatus: "unknown",
     };
 
     if (basic) {
       info.name = basic.obchodniJmeno || basic.nazev || "";
       info.dic = basic.dic || "";
       if (basic.sidlo?.textovaAdresa) info.address = basic.sidlo.textovaAdresa;
+      // DPH registration from ARES. stavZdrojeDph: "AKTIVNI" (registered payer),
+      // "NEEXISTUJICI" (not a payer), "ZANIKLY"/"ZANIKLE" (former payer).
+      const dph: unknown = basic.seznamRegistraci?.stavZdrojeDph;
+      info.vatStatus =
+        dph === "AKTIVNI"
+          ? "payer"
+          : dph === "NEEXISTUJICI"
+            ? "nonpayer"
+            : typeof dph === "string" && dph.startsWith("ZANIK")
+              ? "former"
+              : "unknown";
     }
 
     const primary =

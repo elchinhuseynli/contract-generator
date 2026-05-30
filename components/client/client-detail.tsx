@@ -13,8 +13,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
-import { lookupAres } from "@/lib/ares";
-import { checkDph, type DphResult } from "@/lib/dph";
+import { lookupAres, type VatStatus } from "@/lib/ares";
 import { updateClient, type ClientInput } from "@/lib/db/actions";
 import { formatCZK } from "@/lib/contract/format";
 import type { ClientRow, ContractListItem } from "@/lib/db/types";
@@ -80,8 +79,8 @@ export function ClientDetail({
   });
   const [saving, setSaving] = React.useState(false);
   const [aresLoading, setAresLoading] = React.useState(false);
-  const [dph, setDph] = React.useState<DphResult | null>(null);
-  const [dphLoading, setDphLoading] = React.useState(false);
+  const [vat, setVat] = React.useState<VatStatus | null>(null);
+  const [vatLoading, setVatLoading] = React.useState(false);
 
   function set<K extends keyof ClientInput>(k: K, val: string) {
     setV((p) => ({ ...p, [k]: val }));
@@ -117,6 +116,7 @@ export function ClientDetail({
           dic: r.data.dic || p.dic,
           representative: r.data.representative || p.representative,
         }));
+        setVat(r.data.vatStatus);
         toast.success("Aktualizováno z ARES — nezapomeňte uložit");
       } else {
         toast.error(r.error || "Nepodařilo se načíst z ARES");
@@ -128,18 +128,20 @@ export function ClientDetail({
     }
   }
 
-  async function verifyDph() {
-    if (!v.dic) {
-      toast.warning("Klient nemá DIČ");
+  async function verifyVat() {
+    if (!v.ico) {
+      toast.warning("Klient nemá IČO");
       return;
     }
-    setDphLoading(true);
+    setVatLoading(true);
     try {
-      setDph(await checkDph(v.dic));
+      const r = await lookupAres(v.ico);
+      if (r.success) setVat(r.data.vatStatus);
+      else toast.error(r.error || "Nepodařilo se ověřit");
     } catch {
-      setDph({ status: "error", message: "Služba nedostupná" });
+      toast.error("Chyba při ověření");
     } finally {
-      setDphLoading(false);
+      setVatLoading(false);
     }
   }
 
@@ -256,17 +258,17 @@ export function ClientDetail({
               <Button
                 type="button"
                 variant="outline"
-                onClick={verifyDph}
-                disabled={dphLoading}
+                onClick={verifyVat}
+                disabled={vatLoading}
               >
-                {dphLoading ? (
+                {vatLoading ? (
                   <Loader2 className="size-4 animate-spin" />
                 ) : (
                   <ShieldQuestion className="size-4" />
                 )}
-                Ověřit spolehlivost DPH
+                Ověřit plátce DPH
               </Button>
-              <DphBadge result={dph} />
+              <VatBadge status={vat} />
             </div>
           </form>
         </CardContent>
@@ -328,27 +330,30 @@ export function ClientDetail({
   );
 }
 
-function DphBadge({ result }: { result: DphResult | null }) {
-  if (!result) return null;
-  if (result.status === "reliable")
+function VatBadge({ status }: { status: VatStatus | null }) {
+  if (!status) return null;
+  if (status === "payer")
     return (
       <span className="inline-flex items-center gap-1.5 rounded-md bg-status-signed/10 px-2.5 py-1 text-sm text-status-signed-fg">
         <ShieldCheck className="size-4" />
-        Spolehlivý plátce DPH
+        Plátce DPH
       </span>
     );
-  if (result.status === "unreliable")
+  if (status === "former")
     return (
-      <span className="inline-flex items-center gap-1.5 rounded-md bg-destructive/10 px-2.5 py-1 text-sm text-destructive">
+      <span className="inline-flex items-center gap-1.5 rounded-md bg-status-draft/10 px-2.5 py-1 text-sm text-status-draft-fg">
         <ShieldAlert className="size-4" />
-        Nespolehlivý plátce{result.since ? ` (od ${result.since})` : ""}
+        Bývalý plátce DPH
       </span>
     );
-  if (result.status === "notfound")
+  if (status === "nonpayer")
     return (
-      <span className="text-sm text-muted-foreground">
-        Plátce nenalezen v registru DPH
+      <span className="inline-flex items-center gap-1.5 rounded-md bg-muted px-2.5 py-1 text-sm text-muted-foreground">
+        <ShieldQuestion className="size-4" />
+        Neplátce DPH
       </span>
     );
-  return <span className="text-sm text-muted-foreground">{result.message}</span>;
+  return (
+    <span className="text-sm text-muted-foreground">Stav DPH neznámý</span>
+  );
 }
