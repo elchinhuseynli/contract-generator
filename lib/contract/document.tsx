@@ -6,6 +6,7 @@ import {
 } from "./types";
 import { formatCZK, formatDate, numberToCzechWords } from "./format";
 import { LOGO_DATA_URI } from "./logo";
+import { htmlToMarkdown, sanitizeRichHtml, toRichHtml } from "./richtext";
 
 // ---------------------------------------------------------------------------
 // Structured document model — the single source of truth. Renders to both
@@ -21,7 +22,8 @@ export type DocBlock =
   | { kind: "clauses"; items: string[] }
   | { kind: "bullets"; items: string[] }
   | { kind: "table"; head: string[]; rows: string[][]; totalRow?: string[] }
-  | { kind: "statement"; paras: string[] };
+  | { kind: "statement"; paras: string[] }
+  | { kind: "richtext"; html: string };
 
 export type DocSection = { num?: string; title: string; blocks: DocBlock[] };
 export type DocSignColumn = { for: string; name: string; pos?: string; org?: string };
@@ -38,32 +40,6 @@ export type StyledDoc = {
   sections: DocSection[];
   signature?: { placeDate?: string; columns: DocSignColumn[] };
 };
-
-/** Split markdown-ish free text into paragraph + bullet blocks. */
-function textToBlocks(text: string): DocBlock[] {
-  const blocks: DocBlock[] = [];
-  let bullets: string[] = [];
-  const flush = () => {
-    if (bullets.length) {
-      blocks.push({ kind: "bullets", items: bullets });
-      bullets = [];
-    }
-  };
-  for (const raw of (text ?? "").split("\n")) {
-    const line = raw.trim();
-    if (!line) {
-      flush();
-      continue;
-    }
-    if (/^[*-]\s+/.test(line)) bullets.push(line.replace(/^[*-]\s+/, ""));
-    else {
-      flush();
-      blocks.push({ kind: "para", text: line });
-    }
-  }
-  flush();
-  return blocks;
-}
 
 export function buildContractDoc(
   data: ContractData,
@@ -338,11 +314,12 @@ export function buildContractDoc(
       {
         num: "Příloha A",
         title: "Popis díla",
-        blocks: textToBlocks(
-          [data.projectDescription, data.additionalProvisions]
-            .filter(Boolean)
-            .join("\n\n")
-        ),
+        // Two distinct rich-text blocks (description + provisions) so they
+        // render as separate, spaced sections rather than one merged run.
+        blocks: [data.projectDescription, data.additionalProvisions]
+          .map((v) => toRichHtml(v))
+          .filter(Boolean)
+          .map((html) => ({ kind: "richtext" as const, html })),
       },
       {
         num: "Příloha B",
@@ -390,6 +367,8 @@ function blockToMd(block: DocBlock): string {
       return block.items.map((it) => `* ${it}`).join("\n") + "\n";
     case "statement":
       return block.paras.map((p) => `> ${p}`).join("\n>\n") + "\n";
+    case "richtext":
+      return htmlToMarkdown(block.html) + "\n";
     case "table": {
       const sep = block.head.map(() => "----").join(" | ");
       let md = `| ${block.head.join(" | ")} |\n| ${sep} |\n`;
@@ -481,6 +460,24 @@ export const CONTRACT_DOC_CSS = `
 .cdoc ul.bullets li:last-child { border-bottom: 0; }
 .cdoc ul.bullets li::before { content: ""; position: absolute; left: 2pt; top: 8pt; width: 4.5pt; height: 4.5pt;
   border-radius: 50%; background: var(--accent); }
+/* Rich-text fields (Příloha A). Two consecutive blocks get a clear gap. */
+.cdoc .richtext + .richtext { margin-top: 11pt; }
+.cdoc .richtext p { margin: 0 0 6pt; text-align: justify; }
+.cdoc .richtext li p { margin: 0; }
+.cdoc .richtext > :last-child { margin-bottom: 0; }
+.cdoc .richtext ul, .cdoc .richtext ol { margin: 0 0 6pt; padding: 0; list-style: none; }
+.cdoc .richtext ul > li { position: relative; padding: 3pt 0 3pt 16pt;
+  border-bottom: .5pt solid var(--line-soft); text-align: justify; }
+.cdoc .richtext ul > li:last-child { border-bottom: 0; }
+.cdoc .richtext ul > li::before { content: ""; position: absolute; left: 2pt; top: 8pt;
+  width: 4.5pt; height: 4.5pt; border-radius: 50%; background: var(--accent); }
+.cdoc .richtext ol { counter-reset: rt; }
+.cdoc .richtext ol > li { counter-increment: rt; position: relative; padding: 0 0 6pt 22pt; text-align: justify; }
+.cdoc .richtext ol > li:last-child { padding-bottom: 0; }
+.cdoc .richtext ol > li::before { content: counter(rt) "."; position: absolute; left: 0; top: 0;
+  font-weight: 700; color: var(--accent); font-size: 9.4pt; }
+.cdoc .richtext strong { font-weight: 700; }
+.cdoc .richtext em { font-style: italic; }
 .cdoc .parties { margin-top: 14pt; }
 .cdoc .party { border: .6pt solid var(--line); border-radius: 3pt; margin-bottom: 8pt; overflow: hidden; }
 .cdoc .party .role { background: var(--accent-soft); color: var(--accent); font-weight: 700; font-size: 8.4pt;
@@ -534,6 +531,8 @@ function blockToHtml(b: DocBlock): string {
       return `<ul class="bullets">${b.items.map((i) => `<li>${esc(i)}</li>`).join("")}</ul>`;
     case "statement":
       return `<div class="statement">${b.paras.map((p) => `<p>${esc(p)}</p>`).join("")}</div>`;
+    case "richtext":
+      return `<div class="richtext">${sanitizeRichHtml(b.html)}</div>`;
     case "table": {
       const head = `<thead><tr>${b.head.map((h) => `<th>${esc(h)}</th>`).join("")}</tr></thead>`;
       const rows = b.rows
@@ -620,6 +619,14 @@ function Blocks({ blocks }: { blocks: DocBlock[] }) {
                 <p key={j}>{p}</p>
               ))}
             </div>
+          );
+        if (b.kind === "richtext")
+          return (
+            <div
+              className="richtext"
+              key={i}
+              dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(b.html) }}
+            />
           );
         // table
         return (

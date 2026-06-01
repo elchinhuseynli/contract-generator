@@ -25,7 +25,7 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { RichTextEditor } from "@/components/ui/rich-text-editor";
 import { DatePicker, DateRangePicker } from "@/components/contract/date-picker";
 
 function Field({
@@ -299,12 +299,19 @@ export function ContractForm({
             label="Popis díla"
             htmlFor="projectDescription"
             error={errors.projectDescription?.message}
-            hint="Rozsah konkrétního projektu"
+            hint="Rozsah konkrétního projektu — formátujte odstavce a seznamy"
           >
-            <Textarea
-              id="projectDescription"
-              rows={10}
-              {...register("projectDescription")}
+            <Controller
+              control={control}
+              name="projectDescription"
+              render={({ field, fieldState }) => (
+                <RichTextEditor
+                  id="projectDescription"
+                  value={field.value ?? ""}
+                  onChange={field.onChange}
+                  ariaInvalid={!!fieldState.error}
+                />
+              )}
             />
           </Field>
 
@@ -314,10 +321,17 @@ export function ContractForm({
             error={errors.additionalProvisions?.message}
             hint="Standardní text pod popisem díla — výluky, dodání podkladů apod."
           >
-            <Textarea
-              id="additionalProvisions"
-              rows={10}
-              {...register("additionalProvisions")}
+            <Controller
+              control={control}
+              name="additionalProvisions"
+              render={({ field, fieldState }) => (
+                <RichTextEditor
+                  id="additionalProvisions"
+                  value={field.value ?? ""}
+                  onChange={field.onChange}
+                  ariaInvalid={!!fieldState.error}
+                />
+              )}
             />
           </Field>
 

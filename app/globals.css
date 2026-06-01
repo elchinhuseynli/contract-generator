@@ -225,3 +225,53 @@
     }
   }
 }
+
+/* Rich-text editor (TipTap) content area. Tailwind preflight resets lists, so
+   list styling is restored explicitly here. */
+.rte-content {
+  min-height: 9rem;
+  max-height: 24rem;
+  overflow-y: auto;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  line-height: 1.6;
+  outline: none;
+}
+.rte-content :first-child {
+  margin-top: 0;
+}
+.rte-content p {
+  margin: 0 0 0.5rem;
+}
+.rte-content p:last-child {
+  margin-bottom: 0;
+}
+.rte-content ul,
+.rte-content ol {
+  margin: 0 0 0.5rem;
+  padding-left: 1.4rem;
+}
+.rte-content ul {
+  list-style: disc;
+}
+.rte-content ol {
+  list-style: decimal;
+}
+.rte-content li {
+  margin: 0.15rem 0;
+}
+.rte-content li::marker {
+  color: var(--primary);
+}
+.rte-content li p {
+  margin: 0;
+}
+.rte-content strong {
+  font-weight: 600;
+}
+.rte-content em {
+  font-style: italic;
+}
+.rte-content .ProseMirror-focused {
+  outline: none;
+}

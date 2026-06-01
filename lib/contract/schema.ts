@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { plainTextToHtml, richTextToPlain } from "./richtext";
 
 export const DEFAULT_PROJECT_DESCRIPTION = `Návrh a implementace kompletních webových stránek. Tato část díla zahrnuje:
 * Unikátní grafický návrh odpovídající vizuální identitě
@@ -57,7 +58,9 @@ export const contractSchema = z.object({
   clientContactEmail: optionalEmail,
   clientDataBox: z.string().optional(),
 
-  projectDescription: z.string().min(1, "Zadejte popis díla"),
+  projectDescription: z
+    .string()
+    .refine((v) => richTextToPlain(v).length > 0, "Zadejte popis díla"),
   additionalProvisions: z.string(),
   priceItems: z
     .array(priceItemSchema)
@@ -104,8 +107,8 @@ export function makeDefaultValues(): ContractFormValues {
     clientContactPerson: "",
     clientContactEmail: "",
     clientDataBox: "",
-    projectDescription: DEFAULT_PROJECT_DESCRIPTION,
-    additionalProvisions: DEFAULT_ADDITIONAL_PROVISIONS,
+    projectDescription: plainTextToHtml(DEFAULT_PROJECT_DESCRIPTION),
+    additionalProvisions: plainTextToHtml(DEFAULT_ADDITIONAL_PROVISIONS),
     priceItems: [{ name: "Tvorba webových stránek", price: 75000 }],
     advancePercent: 50,
     completionDate: isoDate(inTwoMonths),
