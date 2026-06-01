@@ -23,7 +23,16 @@ export type DocBlock =
   | { kind: "bullets"; items: string[] }
   | { kind: "table"; head: string[]; rows: string[][]; totalRow?: string[] }
   | { kind: "statement"; paras: string[] }
-  | { kind: "richtext"; html: string };
+  | { kind: "richtext"; html: string }
+  | { kind: "signers"; items: { label: string; who: string }[] }
+  | { kind: "defects" };
+
+/** Static Czech copy for the handover-protocol "Vady a nedodělky" block. */
+const DEFECT_OPTIONS = [
+  "Dílo je převzato bez vad a nedodělků.",
+  "Dílo je převzato s níže uvedenými vadami a/nebo nedodělky.",
+];
+const DEFECT_CAPTION = "Popis vad / nedodělků a termín odstranění:";
 
 export type DocSection = { num?: string; title: string; blocks: DocBlock[] };
 export type DocSignColumn = { for: string; name: string; pos?: string; org?: string };
@@ -369,6 +378,13 @@ function blockToMd(block: DocBlock): string {
       return block.paras.map((p) => `> ${p}`).join("\n>\n") + "\n";
     case "richtext":
       return htmlToMarkdown(block.html) + "\n";
+    case "signers":
+      return block.items.map((s) => `* **${s.label}:** ${s.who}`).join("\n") + "\n";
+    case "defects":
+      return (
+        DEFECT_OPTIONS.map((o) => `- [ ] ${o}`).join("\n") +
+        `\n\n${DEFECT_CAPTION}\n\n___\n`
+      );
     case "table": {
       const sep = block.head.map(() => "----").join(" | ");
       let md = `| ${block.head.join(" | ")} |\n| ${sep} |\n`;
@@ -478,6 +494,19 @@ export const CONTRACT_DOC_CSS = `
   font-weight: 700; color: var(--accent); font-size: 9.4pt; }
 .cdoc .richtext strong { font-weight: 700; }
 .cdoc .richtext em { font-style: italic; }
+/* Handover protocol: oprávněné osoby row + vady/nedodělky block. */
+.cdoc .signers { display: flex; gap: 8pt; margin-top: 2pt; }
+.cdoc .signer { flex: 1; border: .6pt solid var(--line); border-radius: 3pt; padding: 6pt 10pt; background: var(--panel); }
+.cdoc .signer .lbl { font-size: 8pt; color: var(--muted); text-transform: uppercase; letter-spacing: .6pt; }
+.cdoc .signer .who { font-weight: 700; font-size: 9.6pt; margin-top: 1pt; }
+.cdoc .signers + * { margin-top: 12pt; }
+.cdoc .defect-opt { padding: 5pt 0; font-size: 9.6pt; }
+.cdoc .box { display: inline-block; width: 10pt; height: 10pt; border: 1pt solid var(--ink);
+  border-radius: 1.5pt; margin-right: 9pt; vertical-align: -1pt; }
+.cdoc .write-area { margin-top: 8pt; border: .6pt solid var(--line); border-radius: 3pt; padding: 8pt 10pt; }
+.cdoc .write-cap { font-size: 8.4pt; color: var(--muted); margin-bottom: 6pt; }
+.cdoc .write-line { border-bottom: .5pt solid var(--line); height: 16pt; }
+.cdoc .write-line:last-child { border-bottom: 0; }
 .cdoc .parties { margin-top: 14pt; }
 .cdoc .party { border: .6pt solid var(--line); border-radius: 3pt; margin-bottom: 8pt; overflow: hidden; }
 .cdoc .party .role { background: var(--accent-soft); color: var(--accent); font-weight: 700; font-size: 8.4pt;
@@ -533,6 +562,20 @@ function blockToHtml(b: DocBlock): string {
       return `<div class="statement">${b.paras.map((p) => `<p>${esc(p)}</p>`).join("")}</div>`;
     case "richtext":
       return `<div class="richtext">${sanitizeRichHtml(b.html)}</div>`;
+    case "signers":
+      return `<div class="signers">${b.items
+        .map(
+          (s) =>
+            `<div class="signer"><div class="lbl">${esc(s.label)}</div><div class="who">${esc(s.who)}</div></div>`
+        )
+        .join("")}</div>`;
+    case "defects":
+      return (
+        `<div>${DEFECT_OPTIONS.map(
+          (o) => `<div class="defect-opt"><span class="box"></span>${esc(o)}</div>`
+        ).join("")}` +
+        `<div class="write-area"><div class="write-cap">${esc(DEFECT_CAPTION)}</div><div class="write-line"></div><div class="write-line"></div><div class="write-line"></div></div></div>`
+      );
     case "table": {
       const head = `<thead><tr>${b.head.map((h) => `<th>${esc(h)}</th>`).join("")}</tr></thead>`;
       const rows = b.rows
@@ -628,6 +671,34 @@ function Blocks({ blocks }: { blocks: DocBlock[] }) {
               dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(b.html) }}
             />
           );
+        if (b.kind === "signers")
+          return (
+            <div className="signers" key={i}>
+              {b.items.map((s, j) => (
+                <div className="signer" key={j}>
+                  <div className="lbl">{s.label}</div>
+                  <div className="who">{s.who}</div>
+                </div>
+              ))}
+            </div>
+          );
+        if (b.kind === "defects")
+          return (
+            <div key={i}>
+              {DEFECT_OPTIONS.map((o, j) => (
+                <div className="defect-opt" key={j}>
+                  <span className="box" />
+                  {o}
+                </div>
+              ))}
+              <div className="write-area">
+                <div className="write-cap">{DEFECT_CAPTION}</div>
+                <div className="write-line" />
+                <div className="write-line" />
+                <div className="write-line" />
+              </div>
+            </div>
+          );
         // table
         return (
           <table key={i}>
@@ -661,14 +732,8 @@ function Blocks({ blocks }: { blocks: DocBlock[] }) {
   );
 }
 
-export function StyledContractDocument({
-  data,
-  contractor = DEFAULT_CONTRACTOR,
-}: {
-  data: ContractData;
-  contractor?: ContractorInfo;
-}) {
-  const doc = buildContractDoc(data, contractor);
+/** Renders any StyledDoc (used by preview, print, and as the PDF source). */
+export function StyledDocument({ doc }: { doc: StyledDoc }) {
   const isAttachment = (s: DocSection) => s.num?.startsWith("Příloha");
   const articles = doc.sections.filter((s) => !isAttachment(s));
   const attachments = doc.sections.filter(isAttachment);
@@ -768,4 +833,15 @@ export function StyledContractDocument({
       ))}
     </div>
   );
+}
+
+/** Back-compat wrapper: builds a Smlouva o dílo and renders it. */
+export function StyledContractDocument({
+  data,
+  contractor = DEFAULT_CONTRACTOR,
+}: {
+  data: ContractData;
+  contractor?: ContractorInfo;
+}) {
+  return <StyledDocument doc={buildContractDoc(data, contractor)} />;
 }

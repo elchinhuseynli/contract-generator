@@ -100,3 +100,20 @@ export const CONTRACT_STATUSES = [
 ] as const;
 
 export type ContractStatus = (typeof CONTRACT_STATUSES)[number];
+
+/**
+ * Document kind. The `contracts` table holds all of these (discriminated by a
+ * `doc_type` column); `smlouva` (work contract) is the original/default. The
+ * full config for each type — schema, builder, form — lives in doc-types.ts.
+ * This union is kept lightweight (no React/form imports) so the DB layer can
+ * reference it. Widen it as new types are implemented.
+ */
+export type DocType = "smlouva" | "protokol" | "nda" | "dodatek";
+
+/** Document-number prefix per type. smlouva keeps the bare "2026-001" form. */
+export const DOC_NUMBER_PREFIX: Record<DocType, string> = {
+  smlouva: "",
+  protokol: "PD",
+  nda: "NDA",
+  dodatek: "DOD",
+};

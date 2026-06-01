@@ -5,8 +5,13 @@ export function stripHeadingAnchors(markdown: string): string {
   return markdown.replace(/\s*\{#[^}]+\}/g, "");
 }
 
+/** Keep only filename-safe number chars (letters, digits, hyphen). */
+export function docNum(s: string | undefined): string {
+  return (s || "").replace(/[^a-zA-Z0-9-]/g, "");
+}
+
 /** Transliterate diacritics to ASCII (č→c, ř→r, …) and slugify for filenames. */
-function slug(s: string): string {
+export function slug(s: string): string {
   return (s || "")
     .normalize("NFD")
     .replace(/[̀-ͯ]/g, "") // strip combining diacritical marks

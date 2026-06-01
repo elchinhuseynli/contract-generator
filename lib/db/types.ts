@@ -2,16 +2,19 @@ import type {
   ContractData,
   ContractorInfo,
   ContractStatus,
+  DocType,
   VatMode,
 } from "@/lib/contract/types";
 
 export type ContractRow = {
   id: string;
+  doc_type: DocType;
   contract_number: string;
   client_id: string | null;
   client_name: string | null;
   status: ContractStatus;
   total_price: number;
+  // Shape depends on doc_type; ContractData for smlouva, other shapes otherwise.
   data: ContractData;
   current_version: number;
   created_by: string | null;

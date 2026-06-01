@@ -13,10 +13,12 @@ import {
 import { toast } from "sonner";
 
 import { formatCZK } from "@/lib/contract/template";
-import { CONTRACT_STATUSES, type ContractStatus } from "@/lib/contract/types";
+import { CONTRACT_STATUSES, type ContractStatus, type DocType } from "@/lib/contract/types";
+import { DOC_BUILDERS, DOC_BUILDER_LIST } from "@/lib/contract/builders";
 import { STATUS_LABELS, type ContractListItem } from "@/lib/db/types";
 import { deleteContract, duplicateContract } from "@/lib/db/actions";
 import { StatusBadge } from "@/components/contract/status-badge";
+import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -54,6 +56,7 @@ export function ContractsTable({
   const [statusFilter, setStatusFilter] = React.useState<
     ContractStatus | "all"
   >("all");
+  const [typeFilter, setTypeFilter] = React.useState<DocType | "all">("all");
   const [deleteId, setDeleteId] = React.useState<string | null>(null);
   const [deleting, setDeleting] = React.useState(false);
 
@@ -64,8 +67,11 @@ export function ContractsTable({
       c.contract_number.toLowerCase().includes(needle) ||
       (c.client_name ?? "").toLowerCase().includes(needle);
     const matchesStatus = statusFilter === "all" || c.status === statusFilter;
-    return matchesQ && matchesStatus;
+    const matchesType = typeFilter === "all" || c.doc_type === typeFilter;
+    return matchesQ && matchesStatus && matchesType;
   });
+
+  const hasMultipleTypes = DOC_BUILDER_LIST.length > 1;
 
   async function onDuplicate(id: string) {
     try {
@@ -123,6 +129,27 @@ export function ContractsTable({
             </Button>
           ))}
         </div>
+        {hasMultipleTypes && (
+          <div className="flex flex-wrap items-center gap-1">
+            <Button
+              size="sm"
+              variant={typeFilter === "all" ? "secondary" : "ghost"}
+              onClick={() => setTypeFilter("all")}
+            >
+              Všechny typy
+            </Button>
+            {DOC_BUILDER_LIST.map((d) => (
+              <Button
+                key={d.key}
+                size="sm"
+                variant={typeFilter === d.key ? "secondary" : "ghost"}
+                onClick={() => setTypeFilter(d.key)}
+              >
+                {d.shortLabel}
+              </Button>
+            ))}
+          </div>
+        )}
       </div>
 
       {filtered.length === 0 ? (
@@ -137,6 +164,7 @@ export function ContractsTable({
             <TableHeader>
               <TableRow>
                 <TableHead>Číslo</TableHead>
+                <TableHead>Typ</TableHead>
                 <TableHead>Klient</TableHead>
                 <TableHead className="text-right">Cena</TableHead>
                 <TableHead>Stav</TableHead>
@@ -154,11 +182,18 @@ export function ContractsTable({
                   <TableCell className="font-mono font-medium">
                     {c.contract_number}
                   </TableCell>
+                  <TableCell>
+                    <Badge variant="secondary" className="font-normal">
+                      {DOC_BUILDERS[c.doc_type]?.shortLabel ?? c.doc_type}
+                    </Badge>
+                  </TableCell>
                   <TableCell className="max-w-[16rem] truncate">
                     {c.client_name}
                   </TableCell>
                   <TableCell className="text-right font-mono">
-                    {formatCZK(c.total_price)}
+                    {DOC_BUILDERS[c.doc_type]?.priced === false
+                      ? "—"
+                      : formatCZK(c.total_price)}
                   </TableCell>
                   <TableCell>
                     <StatusBadge status={c.status} />

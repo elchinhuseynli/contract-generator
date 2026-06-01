@@ -7,60 +7,77 @@ import {
   sumPriceItems,
   type ContractData,
   type ContractStatus,
+  type DocType,
   type VatMode,
 } from "@/lib/contract/types";
 
-async function clientFromData(
+/** Counterparty fields persisted to the `clients` table (any doc type). */
+export type ClientUpsert = {
+  company: string;
+  address: string | null;
+  ico: string | null;
+  dic: string | null;
+  representative: string | null;
+  email: string | null;
+  phone: string | null;
+  contact_person: string | null;
+  contact_email: string | null;
+  data_box: string | null;
+};
+
+/** Persistence metadata the caller computes (client-side, via the doc-type registry). */
+export type DocMeta = {
+  contractNumber: string;
+  clientName: string | null;
+  totalPrice: number;
+  client: ClientUpsert | null;
+};
+
+async function upsertClient(
   supabase: Awaited<ReturnType<typeof createClient>>,
-  data: ContractData,
+  client: ClientUpsert | null,
   userId: string
 ): Promise<string | null> {
-  if (!data.clientICO) return null;
-  const payload = {
-    company: data.clientCompany,
-    address: data.clientAddress,
-    ico: data.clientICO,
-    dic: data.clientDIC ?? null,
-    representative: data.clientRepresentative,
-    email: data.clientEmail ?? null,
-    phone: data.clientPhone ?? null,
-    contact_person: data.clientContactPerson,
-    contact_email: data.clientContactEmail ?? null,
-    data_box: data.clientDataBox ?? null,
-  };
+  if (!client || !client.ico) return null;
 
   const { data: existing } = await supabase
     .from("clients")
     .select("id")
-    .eq("ico", data.clientICO)
+    .eq("ico", client.ico)
     .maybeSingle();
 
   if (existing) {
-    await supabase.from("clients").update(payload).eq("id", existing.id);
+    await supabase.from("clients").update(client).eq("id", existing.id);
     return existing.id as string;
   }
   const { data: created } = await supabase
     .from("clients")
-    .insert({ ...payload, created_by: userId })
+    .insert({ ...client, created_by: userId })
     .select("id")
     .single();
   return (created?.id as string) ?? null;
 }
 
-export async function saveContract(data: ContractData): Promise<string> {
+/** Create any document type. `data` shape depends on docType (opaque here). */
+export async function saveDocument(
+  docType: DocType,
+  data: unknown,
+  meta: DocMeta
+): Promise<string> {
   const user = await requireUser();
   const supabase = await createClient();
 
-  const clientId = await clientFromData(supabase, data, user.id);
+  const clientId = await upsertClient(supabase, meta.client, user.id);
 
   const { data: row, error } = await supabase
     .from("contracts")
     .insert({
-      contract_number: data.contractNumber,
+      doc_type: docType,
+      contract_number: meta.contractNumber,
       client_id: clientId,
-      client_name: data.clientCompany,
+      client_name: meta.clientName,
       status: "draft",
-      total_price: sumPriceItems(data.priceItems),
+      total_price: meta.totalPrice,
       data,
       created_by: user.id,
     })
@@ -79,7 +96,11 @@ export async function saveContract(data: ContractData): Promise<string> {
   return row.id as string;
 }
 
-export async function updateContract(id: string, data: ContractData) {
+export async function updateDocument(
+  id: string,
+  data: unknown,
+  meta: DocMeta
+): Promise<void> {
   const user = await requireUser();
   const supabase = await createClient();
 
@@ -90,14 +111,14 @@ export async function updateContract(id: string, data: ContractData) {
     .single();
   const nextVersion = (cur?.current_version ?? 1) + 1;
 
-  await clientFromData(supabase, data, user.id);
+  await upsertClient(supabase, meta.client, user.id);
 
   const { error } = await supabase
     .from("contracts")
     .update({
-      contract_number: data.contractNumber,
-      client_name: data.clientCompany,
-      total_price: sumPriceItems(data.priceItems),
+      contract_number: meta.contractNumber,
+      client_name: meta.clientName,
+      total_price: meta.totalPrice,
       data,
       current_version: nextVersion,
     })
@@ -113,6 +134,37 @@ export async function updateContract(id: string, data: ContractData) {
 
   revalidatePath("/dashboard");
   revalidatePath(`/contracts/${id}`);
+}
+
+/** Persistence meta for a Smlouva o dílo (back-compat helper). */
+function contractMeta(data: ContractData): DocMeta {
+  return {
+    contractNumber: data.contractNumber,
+    clientName: data.clientCompany,
+    totalPrice: sumPriceItems(data.priceItems),
+    client: data.clientICO
+      ? {
+          company: data.clientCompany,
+          address: data.clientAddress,
+          ico: data.clientICO,
+          dic: data.clientDIC ?? null,
+          representative: data.clientRepresentative,
+          email: data.clientEmail ?? null,
+          phone: data.clientPhone ?? null,
+          contact_person: data.clientContactPerson,
+          contact_email: data.clientContactEmail ?? null,
+          data_box: data.clientDataBox ?? null,
+        }
+      : null,
+  };
+}
+
+export async function saveContract(data: ContractData): Promise<string> {
+  return saveDocument("smlouva", data, contractMeta(data));
+}
+
+export async function updateContract(id: string, data: ContractData): Promise<void> {
+  await updateDocument(id, data, contractMeta(data));
 }
 
 export async function setContractStatus(id: string, status: ContractStatus) {
@@ -146,10 +198,11 @@ export async function duplicateContract(id: string): Promise<string> {
     .single();
   if (error || !src) throw new Error("Smlouva nenalezena");
 
-  const data = src.data as ContractData;
+  const data = src.data;
   const { data: row, error: insErr } = await supabase
     .from("contracts")
     .insert({
+      doc_type: src.doc_type,
       contract_number: `${src.contract_number}-kopie`,
       client_id: src.client_id,
       client_name: src.client_name,
@@ -185,24 +238,24 @@ export async function restoreVersion(contractId: string, version: number) {
     .single();
   if (error || !ver) throw new Error("Verze nenalezena");
 
-  const data = ver.data as ContractData;
+  const data = ver.data;
   const { data: cur } = await supabase
     .from("contracts")
-    .select("current_version")
+    .select("doc_type, current_version")
     .eq("id", contractId)
     .single();
   const nextVersion = (cur?.current_version ?? 1) + 1;
 
-  await supabase
-    .from("contracts")
-    .update({
-      contract_number: data.contractNumber,
-      client_name: data.clientCompany,
-      total_price: sumPriceItems(data.priceItems),
-      data,
-      current_version: nextVersion,
-    })
-    .eq("id", contractId);
+  // For smlouva, keep the denormalized columns in sync with the restored data;
+  // for other doc types, restore the data blob and keep existing columns.
+  const cols: Record<string, unknown> = { data, current_version: nextVersion };
+  if (cur?.doc_type === "smlouva") {
+    const cd = data as ContractData;
+    cols.contract_number = cd.contractNumber;
+    cols.client_name = cd.clientCompany;
+    cols.total_price = sumPriceItems(cd.priceItems);
+  }
+  await supabase.from("contracts").update(cols).eq("id", contractId);
 
   await supabase.from("contract_versions").insert({
     contract_id: contractId,

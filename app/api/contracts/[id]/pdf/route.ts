@@ -1,11 +1,8 @@
 import { requireUser } from "@/lib/supabase/auth";
 import { getContract, getOrgSettings } from "@/lib/db/queries";
 import { orgToContractor } from "@/lib/db/types";
-import {
-  contractFooterHtml,
-  renderContractHtmlDocument,
-} from "@/lib/contract/render-pdf";
-import { contractFileBase } from "@/lib/contract/export";
+import { getBuilder } from "@/lib/contract/builders";
+import { contractFooterHtml, renderHtmlDocument } from "@/lib/contract/render-pdf";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -26,13 +23,11 @@ export async function GET(
     getContract(id),
     getOrgSettings(),
   ]);
-  if (!contract) return new Response("Smlouva nenalezena", { status: 404 });
+  if (!contract) return new Response("Dokument nenalezen", { status: 404 });
 
-  const html = renderContractHtmlDocument(
-    contract.data,
-    orgToContractor(org)
-  );
-  const footer = contractFooterHtml(contract.contract_number);
+  const cfg = getBuilder(contract.doc_type ?? "smlouva");
+  const html = renderHtmlDocument(cfg.buildDoc(contract.data, orgToContractor(org)));
+  const footer = contractFooterHtml(`${cfg.label} č. ${contract.contract_number}`);
 
   const form = new FormData();
   form.append("files", new Blob([html], { type: "text/html" }), "index.html");
@@ -71,7 +66,7 @@ export async function GET(
   }
 
   const pdf = await res.arrayBuffer();
-  const filename = `${contractFileBase(contract.data)}.pdf`;
+  const filename = `${cfg.fileBase(contract.data)}.pdf`;
   return new Response(pdf, {
     headers: {
       "Content-Type": "application/pdf",

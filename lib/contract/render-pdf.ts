@@ -1,23 +1,32 @@
-import { buildContractDoc, renderDocToHtml } from "./document";
+import {
+  buildContractDoc,
+  renderDocToHtml,
+  type StyledDoc,
+} from "./document";
 import type { ContractData, ContractorInfo } from "./types";
 
-/** Full standalone HTML document for the contract — fed to Gotenberg (Chromium). */
+/** Full standalone HTML document for any StyledDoc — fed to Gotenberg (Chromium). */
+export function renderHtmlDocument(doc: StyledDoc): string {
+  const body = renderDocToHtml(doc);
+  return `<!DOCTYPE html><html lang="cs"><head><meta charset="utf-8" /></head><body style="margin:0">${body}</body></html>`;
+}
+
+/** Back-compat: render a Smlouva o dílo to standalone HTML. */
 export function renderContractHtmlDocument(
   data: ContractData,
   contractor: ContractorInfo
 ): string {
-  const body = renderDocToHtml(buildContractDoc(data, contractor));
-  return `<!DOCTYPE html><html lang="cs"><head><meta charset="utf-8" /></head><body style="margin:0">${body}</body></html>`;
+  return renderHtmlDocument(buildContractDoc(data, contractor));
 }
 
-/** Chromium footer (Gotenberg): doc title left, "Strana X / Y" right. */
-export function contractFooterHtml(contractNumber: string): string {
-  const safe = contractNumber.replace(/[<>&]/g, "");
+/** Chromium footer (Gotenberg): document title left, "Strana X / Y" right. */
+export function contractFooterHtml(leftText: string): string {
+  const safe = (leftText ?? "").replace(/[<>&]/g, "");
   return `<html><head><style>
     .ft { font-family: Arial, sans-serif; font-size: 8px; color: #9aa3ad; width: 100%; padding: 0 14mm; display: flex; justify-content: space-between; }
   </style></head><body>
     <div class="ft">
-      <span>Smlouva o dílo č. ${safe}</span>
+      <span>${safe}</span>
       <span>Strana <span class="pageNumber"></span> / <span class="totalPages"></span></span>
     </div>
   </body></html>`;

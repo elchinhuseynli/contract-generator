@@ -1,10 +1,7 @@
-import Link from "next/link";
-import { FilePlus } from "lucide-react";
-
 import { listContracts } from "@/lib/db/queries";
 import { PageHeader } from "@/components/page-header";
-import { Button } from "@/components/ui/button";
 import { ContractsTable } from "@/components/contract/contracts-table";
+import { NewDocumentMenu } from "@/components/contract/new-document-menu";
 
 export default async function DashboardPage() {
   const contracts = await listContracts();
@@ -12,19 +9,12 @@ export default async function DashboardPage() {
   return (
     <>
       <PageHeader
-        title="Přehled smluv"
+        title="Přehled dokumentů"
         description={`${contracts.length} ${
-          contracts.length === 1 ? "smlouva" : "smluv"
+          contracts.length === 1 ? "dokument" : "dokumentů"
         }`}
       >
-        <Button
-          size="sm"
-          nativeButton={false}
-          render={<Link href="/contracts/new" />}
-        >
-          <FilePlus className="size-4" />
-          Nová smlouva
-        </Button>
+        <NewDocumentMenu />
       </PageHeader>
       <div className="p-4">
         <ContractsTable contracts={contracts} />

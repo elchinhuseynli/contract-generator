@@ -1,5 +1,9 @@
 import { createClient } from "@/lib/supabase/server";
-import { DEFAULT_CONTRACTOR } from "@/lib/contract/types";
+import {
+  DEFAULT_CONTRACTOR,
+  DOC_NUMBER_PREFIX,
+  type DocType,
+} from "@/lib/contract/types";
 import type {
   ClientRow,
   ContractListItem,
@@ -19,19 +23,36 @@ export async function listVersions(contractId: string): Promise<VersionRow[]> {
   return (data ?? []) as VersionRow[];
 }
 
-/** Next sequential contract number for the current year, e.g. "2026-003". */
-export async function getNextContractNumber(): Promise<string> {
+/**
+ * Next sequential document number for the current year, scoped to a doc type.
+ * smlouva → "2026-003"; other types are prefixed, e.g. "NDA-2026-003".
+ */
+export async function getNextDocumentNumber(
+  docType: DocType = "smlouva"
+): Promise<string> {
   const year = new Date().getFullYear();
+  const prefix = DOC_NUMBER_PREFIX[docType] ?? "";
   const supabase = await createClient();
-  const { data } = await supabase.from("contracts").select("contract_number");
+  const { data } = await supabase
+    .from("contracts")
+    .select("contract_number")
+    .eq("doc_type", docType);
 
-  const re = new RegExp(`^${year}-0*(\\d+)`);
+  const re = prefix
+    ? new RegExp(`^${prefix}-${year}-0*(\\d+)`)
+    : new RegExp(`^${year}-0*(\\d+)`);
   let max = 0;
   for (const row of data ?? []) {
     const m = (row.contract_number as string)?.match(re);
     if (m) max = Math.max(max, parseInt(m[1], 10));
   }
-  return `${year}-${String(max + 1).padStart(3, "0")}`;
+  const seq = String(max + 1).padStart(3, "0");
+  return prefix ? `${prefix}-${year}-${seq}` : `${year}-${seq}`;
+}
+
+/** Back-compat alias — smlouva numbering. */
+export function getNextContractNumber(): Promise<string> {
+  return getNextDocumentNumber("smlouva");
 }
 
 export async function listClients(): Promise<ClientRow[]> {
@@ -62,7 +83,7 @@ export async function listContractsForClient(
   const { data, error } = await supabase
     .from("contracts")
     .select(
-      "id, contract_number, client_id, client_name, status, total_price, current_version, created_by, created_at, updated_at"
+      "id, doc_type, contract_number, client_id, client_name, status, total_price, current_version, created_by, created_at, updated_at"
     )
     .eq("client_id", clientId)
     .order("updated_at", { ascending: false });
@@ -75,7 +96,7 @@ export async function listContracts(): Promise<ContractListItem[]> {
   const { data, error } = await supabase
     .from("contracts")
     .select(
-      "id, contract_number, client_id, client_name, status, total_price, current_version, created_by, created_at, updated_at"
+      "id, doc_type, contract_number, client_id, client_name, status, total_price, current_version, created_by, created_at, updated_at"
     )
     .order("updated_at", { ascending: false });
   if (error) throw new Error(error.message);

@@ -1,4 +1,5 @@
 "use client";
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
@@ -15,66 +16,47 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
-import {
-  contractSchema,
-  makeDefaultValues,
-  type ContractFormValues,
-} from "@/lib/contract/schema";
-import { generateContractMarkdown } from "@/lib/contract/template";
-import type { ContractData, ContractorInfo } from "@/lib/contract/types";
+import { getDocConfig } from "@/lib/contract/doc-types";
+import { renderDocToMarkdown } from "@/lib/contract/document";
+import type { ContractorInfo, DocType } from "@/lib/contract/types";
 import {
   buildStandaloneHtml,
-  contractFileBase,
   copyText,
   downloadTextFile,
 } from "@/lib/contract/export";
-import { saveContract, updateContract } from "@/lib/db/actions";
+import { saveDocument, updateDocument } from "@/lib/db/actions";
 import { Button } from "@/components/ui/button";
-import { ContractForm } from "@/components/contract/contract-form";
 import { ContractPreview } from "@/components/contract/contract-preview";
 
-function toContractData(values: ContractFormValues): ContractData {
-  return {
-    ...values,
-    additionalProvisions: values.additionalProvisions ?? "",
-    priceItems: values.priceItems.map((i) => ({
-      name: i.name,
-      price: Number(i.price) || 0,
-    })),
-    advancePercent: Number(values.advancePercent) || 0,
-    warrantyMonths: Number(values.warrantyMonths) || 0,
-  };
-}
-
-export function ContractEditor({
+export function DocumentEditor({
+  docType,
   contractor,
   initialValues,
   contractId,
   suggestedNumber,
 }: {
+  docType: DocType;
   contractor: ContractorInfo;
-  initialValues?: ContractFormValues;
+  initialValues?: any;
   contractId?: string;
   suggestedNumber?: string;
 }) {
   const router = useRouter();
-  const form = useForm<ContractFormValues>({
-    resolver: zodResolver(contractSchema),
-    defaultValues:
-      initialValues ??
-      {
-        ...makeDefaultValues(),
-        ...(suggestedNumber ? { contractNumber: suggestedNumber } : {}),
-      },
+  const cfg = getDocConfig(docType);
+
+  const form = useForm<any>({
+    resolver: zodResolver(cfg.schema as any),
+    defaultValues: initialValues ?? cfg.makeDefaults(suggestedNumber),
     mode: "onBlur",
   });
   const [saving, setSaving] = React.useState(false);
 
   const values = form.watch();
-  const data = toContractData(values);
-  const markdown = generateContractMarkdown(data, contractor);
+  const data = cfg.toData(values);
+  const doc = cfg.buildDoc(data, contractor);
+  const markdown = renderDocToMarkdown(doc);
   const previewRef = React.useRef<HTMLDivElement>(null);
-  const fileBase = contractFileBase(data);
+  const fileBase = cfg.fileBase(data);
 
   async function handleSave() {
     const ok = await form.trigger();
@@ -84,14 +66,15 @@ export function ContractEditor({
     }
     setSaving(true);
     try {
-      const current = toContractData(form.getValues());
+      const current = cfg.toData(form.getValues());
+      const meta = cfg.toSaveMeta(current);
       if (contractId) {
-        await updateContract(contractId, current);
+        await updateDocument(contractId, current, meta);
         toast.success("Změny uloženy");
         router.refresh();
       } else {
-        const id = await saveContract(current);
-        toast.success("Smlouva uložena");
+        const id = await saveDocument(docType, current, meta);
+        toast.success(`${cfg.label} uložena`);
         router.push(`/contracts/${id}/edit`);
       }
     } catch (e) {
@@ -115,10 +98,7 @@ export function ContractEditor({
   }
   function handleDownloadHtml() {
     const body = previewRef.current?.innerHTML ?? "";
-    const html = buildStandaloneHtml(
-      body,
-      `Smlouva o dílo č. ${data.contractNumber}`
-    );
+    const html = buildStandaloneHtml(body, cfg.htmlTitle(data));
     downloadTextFile(`${fileBase}.html`, html, "text/html");
     toast.success("HTML staženo");
   }
@@ -133,7 +113,7 @@ export function ContractEditor({
 
   function handlePdf() {
     if (!contractId) {
-      toast.error("Nejprve uložte smlouvu");
+      toast.error("Nejprve uložte dokument");
       return;
     }
     window.open(`/api/contracts/${contractId}/pdf`, "_blank");
@@ -142,7 +122,7 @@ export function ContractEditor({
   return (
     <div className="grid gap-6 p-4 lg:grid-cols-2">
       <form onSubmit={(e) => e.preventDefault()}>
-        <ContractForm form={form} />
+        <cfg.Form form={form} />
       </form>
 
       <div className="lg:sticky lg:top-[4.75rem] lg:h-[calc(100vh-6rem)]">
@@ -154,7 +134,7 @@ export function ContractEditor({
               ) : (
                 <Save className="size-4" />
               )}
-              {contractId ? "Uložit změny" : "Uložit smlouvu"}
+              {contractId ? "Uložit změny" : "Uložit dokument"}
             </Button>
             <Button size="sm" variant="outline" onClick={handlePdf}>
               <Printer className="size-4" />
@@ -178,10 +158,20 @@ export function ContractEditor({
             </Button>
           </div>
           <div className="flex-1 overflow-y-auto bg-muted/30 p-6">
-            <ContractPreview ref={previewRef} data={data} contractor={contractor} />
+            <ContractPreview ref={previewRef} doc={doc} />
           </div>
         </div>
       </div>
     </div>
   );
+}
+
+/** Back-compat alias for the smlouva editor. */
+export function ContractEditor(props: {
+  contractor: ContractorInfo;
+  initialValues?: any;
+  contractId?: string;
+  suggestedNumber?: string;
+}) {
+  return <DocumentEditor docType="smlouva" {...props} />;
 }

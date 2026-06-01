@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/client";
+import { DOC_BUILDER_LIST } from "@/lib/contract/builders";
 import {
   Sidebar,
   SidebarContent,
@@ -24,12 +25,17 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/theme-toggle";
 
 const NAV = [
   { title: "Přehled", href: "/dashboard", icon: LayoutDashboard },
-  { title: "Nová smlouva", href: "/contracts/new", icon: FilePlus },
   { title: "Klienti", href: "/clients", icon: Users },
   { title: "Nastavení", href: "/settings", icon: Settings },
 ];
@@ -70,6 +76,29 @@ export function AppSidebar({ userEmail }: { userEmail?: string }) {
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
+              <SidebarMenuItem>
+                <DropdownMenu>
+                  <DropdownMenuTrigger
+                    render={
+                      <SidebarMenuButton tooltip="Nový dokument" />
+                    }
+                  >
+                    <FilePlus />
+                    <span>Nový dokument</span>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start" side="right">
+                    {DOC_BUILDER_LIST.map((d) => (
+                      <DropdownMenuItem
+                        key={d.key}
+                        render={<Link href={`/contracts/new?type=${d.key}`} />}
+                      >
+                        {d.label}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </SidebarMenuItem>
+
               {NAV.map((item) => (
                 <SidebarMenuItem key={item.href}>
                   <SidebarMenuButton

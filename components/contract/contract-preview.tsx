@@ -3,24 +3,22 @@
 import * as React from "react";
 
 import { cn } from "@/lib/utils";
-import { StyledContractDocument } from "@/lib/contract/document";
-import type { ContractData, ContractorInfo } from "@/lib/contract/types";
+import { StyledDocument, type StyledDoc } from "@/lib/contract/document";
 
 type ContractPreviewProps = {
-  data: ContractData;
-  contractor: ContractorInfo;
+  doc: StyledDoc;
   className?: string;
 };
 
 /**
- * Renders the contract as the styled, document-like preview (the same component
- * used by the print/PDF view). Forwards a ref to the content node so the page
- * can read innerHTML/innerText for HTML and text export.
+ * Renders a StyledDoc as the styled, document-like preview (same component used
+ * by the print/PDF view). Forwards a ref to the content node so the editor can
+ * read innerHTML/innerText for HTML and text export.
  */
 export const ContractPreview = React.forwardRef<
   HTMLDivElement,
   ContractPreviewProps
->(function ContractPreview({ data, contractor, className }, ref) {
+>(function ContractPreview({ doc, className }, ref) {
   return (
     <div
       ref={ref}
@@ -29,7 +27,7 @@ export const ContractPreview = React.forwardRef<
         className
       )}
     >
-      <StyledContractDocument data={data} contractor={contractor} />
+      <StyledDocument doc={doc} />
     </div>
   );
 });

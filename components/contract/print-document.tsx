@@ -3,19 +3,12 @@
 import * as React from "react";
 import { Printer } from "lucide-react";
 
-import { StyledContractDocument } from "@/lib/contract/document";
-import type { ContractData, ContractorInfo } from "@/lib/contract/types";
+import { StyledDocument, type StyledDoc } from "@/lib/contract/document";
 import { Button } from "@/components/ui/button";
 
-// Print-optimized contract: auto-opens the print dialog so the user can
+// Print-optimized document: auto-opens the print dialog so the user can
 // "Save as PDF". Toolbar is hidden when printing.
-export function PrintDocument({
-  data,
-  contractor,
-}: {
-  data: ContractData;
-  contractor: ContractorInfo;
-}) {
+export function PrintDocument({ doc }: { doc: StyledDoc }) {
   React.useEffect(() => {
     const t = setTimeout(() => window.print(), 800);
     return () => clearTimeout(t);
@@ -34,7 +27,7 @@ export function PrintDocument({
       </div>
 
       <div className="mx-auto max-w-[820px] bg-white p-12 shadow-sm print:max-w-none print:p-0 print:shadow-none">
-        <StyledContractDocument data={data} contractor={contractor} />
+        <StyledDocument doc={doc} />
       </div>
     </div>
   );
