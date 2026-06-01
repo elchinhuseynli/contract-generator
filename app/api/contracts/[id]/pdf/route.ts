@@ -46,11 +46,22 @@ export async function GET(
   form.append("marginRight", "0.63");
   form.append("printBackground", "true");
 
+  // Basic auth for the locked-down Gotenberg endpoint (sent only when both
+  // credentials are configured; harmless if the server doesn't require them).
+  const headers: Record<string, string> = {};
+  const gUser = process.env.GOTENBERG_BASIC_AUTH_USER;
+  const gPass = process.env.GOTENBERG_BASIC_AUTH_PASS;
+  if (gUser && gPass) {
+    headers.Authorization =
+      "Basic " + Buffer.from(`${gUser}:${gPass}`).toString("base64");
+  }
+
   let res: Response;
   try {
     res = await fetch(`${gotenberg}/forms/chromium/convert/html`, {
       method: "POST",
       body: form,
+      headers,
     });
   } catch {
     return new Response("PDF služba je nedostupná", { status: 502 });
