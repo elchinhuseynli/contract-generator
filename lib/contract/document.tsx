@@ -402,10 +402,17 @@ export function renderDocToMarkdown(doc: StyledDoc): string {
     md += "\n";
   }
   if (doc.preamble) md += `${doc.preamble}\n\n`;
-  for (const s of doc.sections) {
-    md += `## ${s.num ? `${s.num} ` : ""}${s.title}\n\n`;
-    for (const b of s.blocks) md += blockToMd(b) + "\n";
-  }
+
+  const sectionMd = (s: DocSection) => {
+    let out = `## ${s.num ? `${s.num} ` : ""}${s.title}\n\n`;
+    for (const b of s.blocks) out += blockToMd(b) + "\n";
+    return out;
+  };
+  const isAttachment = (s: DocSection) => s.num?.startsWith("Příloha");
+
+  // Order: articles → signatures → attachments (přílohy).
+  for (const s of doc.sections.filter((x) => !isAttachment(x))) md += sectionMd(s);
+
   if (doc.signature) {
     md += `## Podpisy\n\n`;
     if (doc.signature.placeDate) md += `${doc.signature.placeDate}\n\n`;
@@ -413,6 +420,9 @@ export function renderDocToMarkdown(doc: StyledDoc): string {
       md += `**${c.for}:** ${c.name}${c.pos ? `, ${c.pos}` : ""}${c.org ? `, ${c.org}` : ""}\n\n`;
     }
   }
+
+  for (const s of doc.sections.filter(isAttachment)) md += sectionMd(s);
+
   return md.trimEnd() + "\n";
 }
 
@@ -485,9 +495,93 @@ export const CONTRACT_DOC_CSS = `
 .cdoc .sign-line { border-top: .8pt solid var(--ink); padding-top: 4pt; }
 .cdoc .sign-line .nm { font-weight: 700; font-size: 9.6pt; }
 .cdoc .sign-line .pos, .cdoc .sign-line .org { font-size: 8.8pt; color: var(--muted); }
-.cdoc section, .cdoc .party, .cdoc .meta, .cdoc .sign-section { page-break-inside: avoid; }
+.cdoc .party, .cdoc .meta { page-break-inside: avoid; }
+.cdoc h2 { break-after: avoid; }
+/* Attachments and the signature block each start on a fresh page. */
+.cdoc .attachment { break-before: page; page-break-before: always; }
+.cdoc .sign-section { break-before: page; page-break-before: always; }
 @media print { @page { size: A4; margin: 18mm 16mm; } }
 `;
+
+// ---------------------------------------------------------------------------
+// HTML string renderer (server-side, for Gotenberg PDF). Mirrors the React
+// component but as a string, so no react-dom/server dependency.
+// ---------------------------------------------------------------------------
+
+function esc(s: string): string {
+  return (s ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
+function blockToHtml(b: DocBlock): string {
+  switch (b.kind) {
+    case "para":
+      return `<p>${esc(b.text)}</p>`;
+    case "clauses":
+      return `<ol class="clauses">${b.items.map((i) => `<li>${esc(i)}</li>`).join("")}</ol>`;
+    case "bullets":
+      return `<ul class="bullets">${b.items.map((i) => `<li>${esc(i)}</li>`).join("")}</ul>`;
+    case "statement":
+      return `<div class="statement">${b.paras.map((p) => `<p>${esc(p)}</p>`).join("")}</div>`;
+    case "table": {
+      const head = `<thead><tr>${b.head.map((h) => `<th>${esc(h)}</th>`).join("")}</tr></thead>`;
+      const rows = b.rows
+        .map((r) => `<tr>${r.map((c) => `<td>${esc(c)}</td>`).join("")}</tr>`)
+        .join("");
+      const total = b.totalRow
+        ? `<tr class="total">${b.totalRow.map((c) => `<td>${esc(c)}</td>`).join("")}</tr>`
+        : "";
+      return `<table>${head}<tbody>${rows}${total}</tbody></table>`;
+    }
+  }
+}
+
+function sectionToHtml(s: DocSection, cls = ""): string {
+  const h2 = `<h2>${s.num ? `<span class="num">${esc(s.num)}</span>` : ""}${esc(s.title)}</h2>`;
+  return `<section${cls ? ` class="${cls}"` : ""}>${h2}${s.blocks.map(blockToHtml).join("")}</section>`;
+}
+
+export function renderDocToHtml(doc: StyledDoc): string {
+  const isAtt = (s: DocSection) => s.num?.startsWith("Příloha");
+  const articles = doc.sections.filter((s) => !isAtt(s));
+  const attachments = doc.sections.filter(isAtt);
+
+  const meta = doc.meta
+    .map((r) => `<div class="meta-row"><div class="k">${esc(r.k)}</div><div class="v">${esc(r.v)}</div></div>`)
+    .join("");
+  const parties = doc.parties
+    .map(
+      (p) =>
+        `<div class="party"><div class="role">${esc(p.role)}</div><div class="pbody"><div class="name">${esc(p.name)}</div>${p.lines
+          .map((l) => `<div class="detail">${l.label ? `<b>${esc(l.label)}:</b> ` : ""}${esc(l.value)}</div>`)
+          .join("")}</div></div>`
+    )
+    .join("");
+  const sig = doc.signature
+    ? `<div class="sign-section">${doc.signature.placeDate ? `<div class="place-date">${esc(doc.signature.placeDate)}</div>` : ""}<div class="sign-grid">${doc.signature.columns
+        .map((c) => {
+          const forG =
+            c.for === "Objednatel" ? "objednatele" : c.for === "Zhotovitel" ? "zhotovitele" : c.for.toLowerCase();
+          return `<div class="sign-col"><div class="for">Za ${esc(forG)}</div><div class="sign-line"><div class="nm">${esc(c.name)}</div>${c.pos ? `<div class="pos">${esc(c.pos)}</div>` : ""}${c.org ? `<div class="org">${esc(c.org)}</div>` : ""}</div></div>`;
+        })
+        .join("")}</div></div>`
+    : "";
+
+  return (
+    `<div class="cdoc"><style>${CONTRACT_DOC_CSS}</style>` +
+    `<div class="masthead"><div class="brand">${esc(doc.brand)}<span class="sub">${esc(doc.brandSub)}</span></div><div class="doc-tag">${esc(doc.docTag)}</div></div>` +
+    `<div class="title-block"><h1>${esc(doc.title)}</h1>${doc.ref ? `<div class="ref">${esc(doc.ref)}</div>` : ""}</div>` +
+    `<div class="meta">${meta}</div>` +
+    `<div class="parties">${parties}</div>` +
+    (doc.preamble ? `<p class="preamble">${esc(doc.preamble)}</p>` : "") +
+    articles.map((s) => sectionToHtml(s)).join("") +
+    sig +
+    attachments.map((s) => sectionToHtml(s, "attachment")).join("") +
+    `</div>`
+  );
+}
 
 function Blocks({ blocks }: { blocks: DocBlock[] }) {
   return (
@@ -559,6 +653,9 @@ export function StyledContractDocument({
   contractor?: ContractorInfo;
 }) {
   const doc = buildContractDoc(data, contractor);
+  const isAttachment = (s: DocSection) => s.num?.startsWith("Příloha");
+  const articles = doc.sections.filter((s) => !isAttachment(s));
+  const attachments = doc.sections.filter(isAttachment);
   return (
     <div className="cdoc">
       <style>{CONTRACT_DOC_CSS}</style>
@@ -603,7 +700,7 @@ export function StyledContractDocument({
 
       {doc.preamble && <p className="preamble">{doc.preamble}</p>}
 
-      {doc.sections.map((s, i) => (
+      {articles.map((s, i) => (
         <section key={i}>
           <h2>
             {s.num && <span className="num">{s.num}</span>}
@@ -639,6 +736,16 @@ export function StyledContractDocument({
           </div>
         </div>
       )}
+
+      {attachments.map((s, i) => (
+        <section className="attachment" key={i}>
+          <h2>
+            {s.num && <span className="num">{s.num}</span>}
+            {s.title}
+          </h2>
+          <Blocks blocks={s.blocks} />
+        </section>
+      ))}
     </div>
   );
 }

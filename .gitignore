@@ -42,3 +42,8 @@ next-env.d.ts
 
 # Claude Code (local-only settings)
 .claude/settings.local.json
+
+# Secrets (note: pattern .env* above does NOT match *.env suffixes)
+secrets.local.env
+*.local.env
+secrets.*

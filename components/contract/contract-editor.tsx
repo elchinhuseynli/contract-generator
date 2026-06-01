@@ -136,7 +136,7 @@ export function ContractEditor({
       toast.error("Nejprve uložte smlouvu");
       return;
     }
-    window.open(`/print/${contractId}`, "_blank");
+    window.open(`/api/contracts/${contractId}/pdf`, "_blank");
   }
 
   return (
