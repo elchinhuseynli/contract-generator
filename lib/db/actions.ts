@@ -26,6 +26,7 @@ async function clientFromData(
     phone: data.clientPhone ?? null,
     contact_person: data.clientContactPerson,
     contact_email: data.clientContactEmail ?? null,
+    data_box: data.clientDataBox ?? null,
   };
 
   const { data: existing } = await supabase
@@ -221,6 +222,7 @@ export type OrgSettingsInput = {
   bank_name: string;
   account_number: string;
   vat_mode: VatMode;
+  data_box: string | null;
 };
 
 export async function updateOrgSettings(values: OrgSettingsInput) {

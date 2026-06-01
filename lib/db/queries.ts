@@ -111,6 +111,7 @@ export async function getOrgSettings(): Promise<OrgSettingsRow> {
       bank_name: DEFAULT_CONTRACTOR.bankName,
       account_number: DEFAULT_CONTRACTOR.accountNumber,
       vat_mode: DEFAULT_CONTRACTOR.vatMode,
+      data_box: DEFAULT_CONTRACTOR.dataBox,
       updated_at: "",
     }
   );

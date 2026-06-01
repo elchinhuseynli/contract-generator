@@ -119,18 +119,31 @@ export function ContractForm({
           <CardDescription>Základní informace a číslování</CardDescription>
         </CardHeader>
         <CardContent>
-          <Field
-            label="Číslo smlouvy"
-            htmlFor="contractNumber"
-            error={errors.contractNumber?.message}
-            className="sm:max-w-xs"
-          >
-            <Input
-              id="contractNumber"
-              placeholder="2026-001"
-              {...register("contractNumber")}
-            />
-          </Field>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field
+              label="Číslo smlouvy"
+              htmlFor="contractNumber"
+              error={errors.contractNumber?.message}
+            >
+              <Input
+                id="contractNumber"
+                placeholder="2026-001"
+                {...register("contractNumber")}
+              />
+            </Field>
+            <Field
+              label="Název díla"
+              htmlFor="workName"
+              error={errors.workName?.message}
+              hint="Předmět / typ práce"
+            >
+              <Input
+                id="workName"
+                placeholder="Tvorba webových stránek"
+                {...register("workName")}
+              />
+            </Field>
+          </div>
         </CardContent>
       </Card>
 
@@ -201,6 +214,18 @@ export function ContractForm({
             <Input
               id="clientRepresentative"
               {...register("clientRepresentative")}
+            />
+          </Field>
+
+          <Field
+            label="Datová schránka"
+            htmlFor="clientDataBox"
+            hint="ID datové schránky klienta (nepovinné)"
+          >
+            <Input
+              id="clientDataBox"
+              className="font-mono"
+              {...register("clientDataBox")}
             />
           </Field>
         </CardContent>

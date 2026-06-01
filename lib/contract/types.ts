@@ -24,6 +24,8 @@ export function sumPriceItems(items: PriceItem[]): number {
 
 export type ContractData = {
   contractNumber: string;
+  /** Short name / subject of the work, e.g. "Tvorba webových stránek". */
+  workName: string;
 
   // Objednatel (client)
   clientCompany: string;
@@ -35,6 +37,7 @@ export type ContractData = {
   clientPhone?: string;
   clientContactPerson: string;
   clientContactEmail?: string;
+  clientDataBox?: string;
 
   // Předmět / cena
   projectDescription: string;
@@ -75,6 +78,7 @@ export type ContractorInfo = {
   bankName: string;
   accountNumber: string;
   vatMode: VatMode;
+  dataBox: string;
 };
 
 export const DEFAULT_CONTRACTOR: ContractorInfo = {
@@ -85,6 +89,7 @@ export const DEFAULT_CONTRACTOR: ContractorInfo = {
   bankName: "Raiffeisenbank, a.s.",
   accountNumber: "2096701002/5500",
   vatMode: "identified",
+  dataBox: "354pnxf",
 };
 
 export const CONTRACT_STATUSES = [

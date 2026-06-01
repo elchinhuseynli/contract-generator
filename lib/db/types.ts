@@ -55,6 +55,7 @@ export type OrgSettingsRow = {
   bank_name: string;
   account_number: string;
   vat_mode: VatMode;
+  data_box: string | null;
   updated_at: string;
 };
 
@@ -67,6 +68,7 @@ export function orgToContractor(o: OrgSettingsRow): ContractorInfo {
     bankName: o.bank_name,
     accountNumber: o.account_number,
     vatMode: o.vat_mode ?? "nonpayer",
+    dataBox: o.data_box ?? "",
   };
 }
 

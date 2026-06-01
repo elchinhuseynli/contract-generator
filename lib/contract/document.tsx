@@ -5,6 +5,7 @@ import {
   sumPriceItems,
 } from "./types";
 import { formatCZK, formatDate, numberToCzechWords } from "./format";
+import { LOGO_DATA_URI } from "./logo";
 
 // ---------------------------------------------------------------------------
 // Structured document model — the single source of truth. Renders to both
@@ -86,6 +87,8 @@ export function buildContractDoc(
   objednatelLines.push({ label: "Jednatel", value: data.clientRepresentative });
   if (data.clientEmail) objednatelLines.push({ label: "Email", value: data.clientEmail });
   if (data.clientPhone) objednatelLines.push({ label: "Telefon", value: data.clientPhone });
+  if (data.clientDataBox)
+    objednatelLines.push({ label: "Datová schránka", value: data.clientDataBox });
 
   const prilohaC: DocSection = {
     num: "Příloha C",
@@ -113,6 +116,7 @@ export function buildContractDoc(
     ref: `č. ${data.contractNumber}`,
     meta: [
       { k: "Číslo smlouvy", v: data.contractNumber },
+      { k: "Název díla", v: data.workName },
       { k: "Objednatel", v: data.clientCompany },
       { k: "Termín dokončení", v: formatDate(data.completionDate) },
       {
@@ -131,6 +135,9 @@ export function buildContractDoc(
           { label: "Jednatel", value: contractor.representative },
           { label: "Bankovní spojení", value: contractor.bankName },
           { label: "Číslo účtu", value: contractor.accountNumber },
+          ...(contractor.dataBox
+            ? [{ label: "Datová schránka", value: contractor.dataBox }]
+            : []),
         ],
       },
       { role: "Objednatel", name: data.clientCompany, lines: objednatelLines },
@@ -437,11 +444,13 @@ export const CONTRACT_DOC_CSS = `
   --line: #d9dee4; --line-soft: #e8ebef;
   --accent: #1f4e6b; --accent-soft: #eef3f6; --panel: #f7f8fa;
   font-family: "Carlito", "Inter", "Liberation Sans", system-ui, sans-serif;
-  color: var(--ink); font-size: 10.5pt; line-height: 1.5; text-rendering: optimizeLegibility;
+  color: var(--ink); font-size: 10.5pt; line-height: 1.46; text-rendering: optimizeLegibility;
 }
 .cdoc * { box-sizing: border-box; }
 .cdoc .masthead { display: flex; justify-content: space-between; align-items: flex-end;
   border-bottom: 2.4pt solid var(--accent); padding-bottom: 8pt; margin-bottom: 4pt; }
+.cdoc .brand-wrap { display: flex; align-items: center; gap: 9pt; }
+.cdoc .logo { height: 30pt; width: auto; display: block; }
 .cdoc .brand { font-size: 13pt; font-weight: 700; letter-spacing: .2pt; color: var(--ink); }
 .cdoc .brand .sub { display: block; font-size: 7.8pt; font-weight: 400; letter-spacing: 1.6pt;
   text-transform: uppercase; color: var(--faint); margin-top: 1pt; }
@@ -456,7 +465,7 @@ export const CONTRACT_DOC_CSS = `
 .cdoc .meta-row .k { width: 38%; background: var(--panel); padding: 6pt 10pt; font-size: 8.6pt;
   color: var(--muted); font-weight: 600; border-right: .6pt solid var(--line-soft); }
 .cdoc .meta-row .v { width: 62%; padding: 6pt 10pt; font-size: 9.4pt; }
-.cdoc section { margin-top: 16pt; }
+.cdoc section { margin-top: 13pt; }
 .cdoc h2 { font-size: 10.5pt; font-weight: 700; color: var(--accent); margin: 0 0 7pt; padding-bottom: 3pt;
   border-bottom: .6pt solid var(--line); letter-spacing: .2pt; }
 .cdoc h2 .num { display: inline-block; min-width: 26pt; padding-right: 6pt; color: var(--ink); }
@@ -487,19 +496,19 @@ export const CONTRACT_DOC_CSS = `
 .cdoc tbody tr.total td { font-weight: 700; background: var(--accent-soft); color: var(--ink); }
 .cdoc tbody td:last-child { text-align: right; white-space: nowrap; }
 .cdoc thead th:last-child { text-align: right; }
-.cdoc .sign-section { margin-top: 24pt; }
-.cdoc .place-date { font-size: 9.6pt; margin-bottom: 26pt; }
+.cdoc .place-date { font-size: 9.6pt; margin-bottom: 14pt; }
 .cdoc .sign-grid { display: flex; gap: 26pt; }
 .cdoc .sign-col { flex: 1; }
-.cdoc .sign-col .for { font-size: 8.6pt; color: var(--muted); text-transform: uppercase; letter-spacing: .8pt; margin-bottom: 34pt; }
+.cdoc .sign-col .for { font-size: 8.6pt; color: var(--muted); text-transform: uppercase; letter-spacing: .8pt; margin-bottom: 26pt; }
 .cdoc .sign-line { border-top: .8pt solid var(--ink); padding-top: 4pt; }
 .cdoc .sign-line .nm { font-weight: 700; font-size: 9.6pt; }
 .cdoc .sign-line .pos, .cdoc .sign-line .org { font-size: 8.8pt; color: var(--muted); }
 .cdoc .party, .cdoc .meta { page-break-inside: avoid; }
 .cdoc h2 { break-after: avoid; }
-/* Attachments and the signature block each start on a fresh page. */
+/* Attachments each start on a fresh page. The signature stays with the
+   articles and only moves as a whole if it doesn't fit (no empty page). */
 .cdoc .attachment { break-before: page; page-break-before: always; }
-.cdoc .sign-section { break-before: page; page-break-before: always; }
+.cdoc .sign-section { break-inside: avoid; page-break-inside: avoid; margin-top: 14pt; }
 @media print { @page { size: A4; margin: 18mm 16mm; } }
 `;
 
@@ -571,7 +580,7 @@ export function renderDocToHtml(doc: StyledDoc): string {
 
   return (
     `<div class="cdoc"><style>${CONTRACT_DOC_CSS}</style>` +
-    `<div class="masthead"><div class="brand">${esc(doc.brand)}<span class="sub">${esc(doc.brandSub)}</span></div><div class="doc-tag">${esc(doc.docTag)}</div></div>` +
+    `<div class="masthead"><div class="brand-wrap"><img class="logo" src="${LOGO_DATA_URI}" alt="" /><div class="brand">${esc(doc.brand)}<span class="sub">${esc(doc.brandSub)}</span></div></div><div class="doc-tag">${esc(doc.docTag)}</div></div>` +
     `<div class="title-block"><h1>${esc(doc.title)}</h1>${doc.ref ? `<div class="ref">${esc(doc.ref)}</div>` : ""}</div>` +
     `<div class="meta">${meta}</div>` +
     `<div class="parties">${parties}</div>` +
@@ -661,9 +670,13 @@ export function StyledContractDocument({
       <style>{CONTRACT_DOC_CSS}</style>
 
       <div className="masthead">
-        <div className="brand">
-          {doc.brand}
-          <span className="sub">{doc.brandSub}</span>
+        <div className="brand-wrap">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img className="logo" src={LOGO_DATA_URI} alt="Flex Digital Agency" />
+          <div className="brand">
+            {doc.brand}
+            <span className="sub">{doc.brandSub}</span>
+          </div>
         </div>
         <div className="doc-tag">{doc.docTag}</div>
       </div>

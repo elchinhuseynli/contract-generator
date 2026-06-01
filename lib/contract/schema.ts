@@ -44,6 +44,7 @@ export const priceItemSchema = z.object({
 
 export const contractSchema = z.object({
   contractNumber: z.string().min(1, "Zadejte číslo smlouvy"),
+  workName: z.string().min(1, "Zadejte název díla"),
 
   clientCompany: z.string().min(1, "Zadejte název firmy"),
   clientAddress: z.string().min(1, "Zadejte adresu"),
@@ -54,6 +55,7 @@ export const contractSchema = z.object({
   clientPhone: z.string().optional(),
   clientContactPerson: z.string().min(1, "Zadejte kontaktní osobu"),
   clientContactEmail: optionalEmail,
+  clientDataBox: z.string().optional(),
 
   projectDescription: z.string().min(1, "Zadejte popis díla"),
   additionalProvisions: z.string(),
@@ -91,6 +93,7 @@ export function makeDefaultValues(): ContractFormValues {
 
   return {
     contractNumber: `${today.getFullYear()}-001`,
+    workName: "Tvorba webových stránek",
     clientCompany: "",
     clientAddress: "",
     clientICO: "",
@@ -100,6 +103,7 @@ export function makeDefaultValues(): ContractFormValues {
     clientPhone: "",
     clientContactPerson: "",
     clientContactEmail: "",
+    clientDataBox: "",
     projectDescription: DEFAULT_PROJECT_DESCRIPTION,
     additionalProvisions: DEFAULT_ADDITIONAL_PROVISIONS,
     priceItems: [{ name: "Tvorba webových stránek", price: 75000 }],

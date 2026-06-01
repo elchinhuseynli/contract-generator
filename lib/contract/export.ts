@@ -5,10 +5,24 @@ export function stripHeadingAnchors(markdown: string): string {
   return markdown.replace(/\s*\{#[^}]+\}/g, "");
 }
 
-/** Filesystem-safe base name, e.g. Smlouva_2026-001_Firma_s_r_o. */
-export function contractFileBase(data: Pick<ContractData, "contractNumber" | "clientCompany">): string {
-  const company = (data.clientCompany || "klient").replace(/[^a-zA-Z0-9]/g, "_");
-  return `Smlouva_${data.contractNumber}_${company}`;
+/** Transliterate diacritics to ASCII (č→c, ř→r, …) and slugify for filenames. */
+function slug(s: string): string {
+  return (s || "")
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "") // strip combining diacritical marks
+    .replace(/[^a-zA-Z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "")
+    .slice(0, 48);
+}
+
+/** Clean ASCII base name, e.g. Smlouva_2026-001_Alza_Tvorba_webovych_stranek. */
+export function contractFileBase(
+  data: Pick<ContractData, "contractNumber" | "clientCompany" | "workName">
+): string {
+  const num = (data.contractNumber || "smlouva").replace(/[^a-zA-Z0-9-]/g, "");
+  return ["Smlouva", num, slug(data.clientCompany), slug(data.workName)]
+    .filter(Boolean)
+    .join("_");
 }
 
 export function downloadTextFile(filename: string, content: string, mime: string) {

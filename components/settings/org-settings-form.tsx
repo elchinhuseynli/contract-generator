@@ -33,6 +33,7 @@ const FIELDS: { key: keyof OrgSettingsInput; label: string }[] = [
   { key: "address", label: "Sídlo" },
   { key: "bank_name", label: "Banka" },
   { key: "account_number", label: "Číslo účtu" },
+  { key: "data_box", label: "ID datové schránky" },
 ];
 
 export function OrgSettingsForm({ org }: { org: OrgSettingsRow }) {
@@ -45,6 +46,7 @@ export function OrgSettingsForm({ org }: { org: OrgSettingsRow }) {
     bank_name: org.bank_name,
     account_number: org.account_number,
     vat_mode: org.vat_mode,
+    data_box: org.data_box ?? "",
   });
   const [saving, setSaving] = React.useState(false);
 
@@ -78,7 +80,7 @@ export function OrgSettingsForm({ org }: { org: OrgSettingsRow }) {
                 <Label htmlFor={f.key}>{f.label}</Label>
                 <Input
                   id={f.key}
-                  value={values[f.key]}
+                  value={values[f.key] ?? ""}
                   onChange={(e) =>
                     setValues((p) => ({ ...p, [f.key]: e.target.value }))
                   }
