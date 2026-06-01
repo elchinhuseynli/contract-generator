@@ -7,6 +7,10 @@ import { toast } from "sonner";
 
 import { cn } from "@/lib/utils";
 import { lookupAres } from "@/lib/ares";
+import {
+  listLinkableSmlouvy,
+  type LinkableContract,
+} from "@/lib/db/actions";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -18,6 +22,13 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RichTextEditor } from "@/components/ui/rich-text-editor";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 /** Labeled field wrapper with error/hint text. Shared by the document forms. */
 export function Field({
@@ -187,5 +198,70 @@ export function ClientPartyFields({
         </div>
       </CardContent>
     </Card>
+  );
+}
+
+/**
+ * Optional picker that prefills fields from a saved Smlouva o dílo. Fetches the
+ * list of smlouvy on mount; on selection calls onPick with the chosen contract.
+ * Renders nothing if there are no saved smlouvy.
+ */
+export function LinkSmlouvaField({
+  label = "Navázat na smlouvu",
+  hint = "Volitelné — předvyplní číslo smlouvy, název díla a údaje objednatele",
+  onPick,
+}: {
+  label?: string;
+  hint?: string;
+  onPick: (c: LinkableContract) => void;
+}) {
+  const [items, setItems] = React.useState<LinkableContract[]>([]);
+  const [picked, setPicked] = React.useState<string | null>(null);
+  const [loading, setLoading] = React.useState(true);
+
+  React.useEffect(() => {
+    let alive = true;
+    listLinkableSmlouvy()
+      .then((r) => {
+        if (alive) setItems(r);
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (alive) setLoading(false);
+      });
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  if (!loading && items.length === 0) return null;
+
+  const labels = Object.fromEntries(items.map((c) => [c.id, c.label]));
+
+  return (
+    <Field label={label} hint={hint}>
+      <Select
+        items={labels}
+        value={picked}
+        onValueChange={(v) => {
+          setPicked(v);
+          const c = items.find((i) => i.id === v);
+          if (c) onPick(c);
+        }}
+      >
+        <SelectTrigger className="w-full">
+          <SelectValue
+            placeholder={loading ? "Načítání smluv…" : "Vyberte uloženou smlouvu"}
+          />
+        </SelectTrigger>
+        <SelectContent>
+          {items.map((c) => (
+            <SelectItem key={c.id} value={c.id}>
+              {c.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </Field>
   );
 }

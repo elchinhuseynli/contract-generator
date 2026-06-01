@@ -187,6 +187,51 @@ export async function deleteContract(id: string) {
   revalidatePath("/dashboard");
 }
 
+/** A saved Smlouva o dílo that a dodatek/protokol can be linked to (prefill). */
+export type LinkableContract = {
+  id: string;
+  contractNumber: string;
+  workName: string;
+  contractDate: string;
+  clientCompany: string;
+  clientAddress: string;
+  clientICO: string;
+  clientDIC: string;
+  clientRepresentative: string;
+  clientDataBox: string;
+  label: string;
+};
+
+/** List saved smlouvy (newest first) for the "Navázat na smlouvu" picker. */
+export async function listLinkableSmlouvy(): Promise<LinkableContract[]> {
+  await requireUser();
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("contracts")
+    .select("id, contract_number, client_name, data")
+    .eq("doc_type", "smlouva")
+    .order("updated_at", { ascending: false });
+  if (error) throw new Error(error.message);
+  return (data ?? []).map((row) => {
+    const d = (row.data ?? {}) as ContractData;
+    const number = d.contractNumber ?? (row.contract_number as string);
+    const company = d.clientCompany ?? (row.client_name as string) ?? "";
+    return {
+      id: row.id as string,
+      contractNumber: number,
+      workName: d.workName ?? "",
+      contractDate: d.contractDate ?? "",
+      clientCompany: company,
+      clientAddress: d.clientAddress ?? "",
+      clientICO: d.clientICO ?? "",
+      clientDIC: d.clientDIC ?? "",
+      clientRepresentative: d.clientRepresentative ?? "",
+      clientDataBox: d.clientDataBox ?? "",
+      label: `${number} · ${company || "—"}`,
+    };
+  });
+}
+
 export async function duplicateContract(id: string): Promise<string> {
   const user = await requireUser();
   const supabase = await createClient();

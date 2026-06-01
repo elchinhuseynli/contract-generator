@@ -16,6 +16,7 @@ import {
   Field,
   RichTextField,
   ClientPartyFields,
+  LinkSmlouvaField,
 } from "@/components/contract/doc-fields";
 
 export function DodatekForm({
@@ -26,6 +27,7 @@ export function DodatekForm({
   const {
     register,
     control,
+    setValue,
     formState: { errors },
   } = form;
 
@@ -37,6 +39,21 @@ export function DodatekForm({
           <CardDescription>Identifikace dodatku a navázané smlouvy</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+          <LinkSmlouvaField
+            onPick={(c) => {
+              const set = (n: keyof DodatekFormValues, v: string) =>
+                setValue(n, v, { shouldValidate: true, shouldDirty: true });
+              set("parentContractNumber", c.contractNumber);
+              set("parentContractDate", c.contractDate);
+              set("workName", c.workName);
+              set("clientCompany", c.clientCompany);
+              set("clientAddress", c.clientAddress);
+              set("clientICO", c.clientICO);
+              set("clientDIC", c.clientDIC);
+              set("clientRepresentative", c.clientRepresentative);
+              set("clientDataBox", c.clientDataBox);
+            }}
+          />
           <div className="grid gap-4 sm:grid-cols-2">
             <Field
               label="Číslo dodatku"
