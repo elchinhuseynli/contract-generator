@@ -47,3 +47,6 @@ next-env.d.ts
 secrets.local.env
 *.local.env
 secrets.*
+
+# self-hosted Supabase credentials (skill output)
+*.credentials.local.txt
