@@ -216,10 +216,11 @@ export async function listLinkableSmlouvy(): Promise<LinkableContract[]> {
     const d = (row.data ?? {}) as ContractData;
     const number = d.contractNumber ?? (row.contract_number as string);
     const company = d.clientCompany ?? (row.client_name as string) ?? "";
+    const workName = d.workName ?? "";
     return {
       id: row.id as string,
       contractNumber: number,
-      workName: d.workName ?? "",
+      workName,
       contractDate: d.contractDate ?? "",
       clientCompany: company,
       clientAddress: d.clientAddress ?? "",
@@ -227,7 +228,11 @@ export async function listLinkableSmlouvy(): Promise<LinkableContract[]> {
       clientDIC: d.clientDIC ?? "",
       clientRepresentative: d.clientRepresentative ?? "",
       clientDataBox: d.clientDataBox ?? "",
-      label: `${number} · ${company || "—"}`,
+      // Lead with the work name so users pick by what the smlouva is about,
+      // not just the client (they often have several per client).
+      label: `${number} · ${workName || "bez názvu díla"}${
+        company ? ` — ${company}` : ""
+      }`,
     };
   });
 }
@@ -355,4 +360,29 @@ export async function updateClient(id: string, values: ClientInput) {
   if (error) throw new Error(error.message);
   revalidatePath("/clients");
   revalidatePath(`/clients/${id}`);
+}
+
+/**
+ * Delete a client. Refuses if any documents are still linked to it (the
+ * documents keep their denormalized client_name, but we don't want to silently
+ * orphan them) — the caller should surface the returned message.
+ */
+export async function deleteClient(id: string): Promise<void> {
+  await requireUser();
+  const supabase = await createClient();
+
+  const { count, error: countErr } = await supabase
+    .from("contracts")
+    .select("id", { count: "exact", head: true })
+    .eq("client_id", id);
+  if (countErr) throw new Error(countErr.message);
+  if ((count ?? 0) > 0) {
+    throw new Error(
+      `Klient má ${count} navázaných dokumentů. Nejprve je smažte nebo odpojte.`
+    );
+  }
+
+  const { error } = await supabase.from("clients").delete().eq("id", id);
+  if (error) throw new Error(error.message);
+  revalidatePath("/clients");
 }

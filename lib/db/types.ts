@@ -22,8 +22,15 @@ export type ContractRow = {
   updated_at: string;
 };
 
-/** List view doesn't need the full JSONB snapshot. */
-export type ContractListItem = Omit<ContractRow, "data">;
+/**
+ * List view doesn't need the full JSONB snapshot — but it does carry the work
+ * name (extracted from `data->>workName` in the query) so the table can show
+ * what the document is about, not just the client. Null for types without a
+ * work name (e.g. NDA).
+ */
+export type ContractListItem = Omit<ContractRow, "data"> & {
+  work_name: string | null;
+};
 
 export type VersionRow = {
   id: string;

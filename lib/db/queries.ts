@@ -83,7 +83,7 @@ export async function listContractsForClient(
   const { data, error } = await supabase
     .from("contracts")
     .select(
-      "id, doc_type, contract_number, client_id, client_name, status, total_price, current_version, created_by, created_at, updated_at"
+      "id, doc_type, contract_number, client_id, client_name, status, total_price, current_version, created_by, created_at, updated_at, work_name:data->>workName"
     )
     .eq("client_id", clientId)
     .order("updated_at", { ascending: false });
@@ -96,7 +96,7 @@ export async function listContracts(): Promise<ContractListItem[]> {
   const { data, error } = await supabase
     .from("contracts")
     .select(
-      "id, doc_type, contract_number, client_id, client_name, status, total_price, current_version, created_by, created_at, updated_at"
+      "id, doc_type, contract_number, client_id, client_name, status, total_price, current_version, created_by, created_at, updated_at, work_name:data->>workName"
     )
     .order("updated_at", { ascending: false });
   if (error) throw new Error(error.message);

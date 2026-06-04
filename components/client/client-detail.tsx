@@ -10,11 +10,12 @@ import {
   ShieldAlert,
   ShieldCheck,
   ShieldQuestion,
+  Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
 
 import { lookupAres, type VatRegistration } from "@/lib/ares";
-import { updateClient, type ClientInput } from "@/lib/db/actions";
+import { updateClient, deleteClient, type ClientInput } from "@/lib/db/actions";
 import { formatCZK } from "@/lib/contract/format";
 import { VAT_MODE_LABELS, type VatMode } from "@/lib/contract/types";
 import type { ClientRow, ContractListItem } from "@/lib/db/types";
@@ -44,6 +45,16 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 function Field({
   label,
@@ -90,6 +101,28 @@ export function ClientDetail({
   const [aresLoading, setAresLoading] = React.useState(false);
   const [vat, setVat] = React.useState<VatRegistration | null>(null);
   const [vatLoading, setVatLoading] = React.useState(false);
+  const [confirmDelete, setConfirmDelete] = React.useState(false);
+  const [deleting, setDeleting] = React.useState(false);
+
+  const docCount = contracts.length;
+  const docPhrase =
+    docCount === 1
+      ? "navázaný dokument"
+      : docCount <= 4
+        ? "navázané dokumenty"
+        : "navázaných dokumentů";
+
+  async function onDelete() {
+    setDeleting(true);
+    try {
+      await deleteClient(client.id);
+      toast.success("Klient smazán");
+      router.push("/clients");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Smazání se nezdařilo");
+      setDeleting(false);
+    }
+  }
 
   function set<K extends keyof ClientInput>(k: K, val: string) {
     setV((p) => ({ ...p, [k]: val }));
@@ -314,6 +347,16 @@ export function ClientDetail({
                 )}
                 Uložit změny
               </Button>
+              <Button
+                type="button"
+                variant="outline"
+                className="ml-auto text-destructive hover:text-destructive"
+                onClick={() => setConfirmDelete(true)}
+                disabled={saving || deleting}
+              >
+                <Trash2 className="size-4" />
+                Smazat klienta
+              </Button>
             </div>
           </form>
         </CardContent>
@@ -339,6 +382,7 @@ export function ClientDetail({
                 <TableHeader>
                   <TableRow>
                     <TableHead>Číslo</TableHead>
+                    <TableHead>Název díla</TableHead>
                     <TableHead className="text-right">Cena</TableHead>
                     <TableHead>Stav</TableHead>
                     <TableHead>Upraveno</TableHead>
@@ -353,6 +397,11 @@ export function ClientDetail({
                     >
                       <TableCell className="font-mono font-medium">
                         {c.contract_number}
+                      </TableCell>
+                      <TableCell className="max-w-[14rem] truncate">
+                        {c.work_name || (
+                          <span className="text-muted-foreground">—</span>
+                        )}
                       </TableCell>
                       <TableCell className="text-right font-mono">
                         {formatCZK(c.total_price)}
@@ -371,6 +420,32 @@ export function ClientDetail({
           )}
         </CardContent>
       </Card>
+
+      <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Smazat klienta?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {docCount > 0
+                ? `Klienta „${client.company}" nelze smazat — má ${docCount} ${docPhrase}. Nejprve je smažte nebo odpojte.`
+                : `Klient „${client.company}" bude trvale odstraněn. Tuto akci nelze vrátit.`}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Zavřít</AlertDialogCancel>
+            {docCount === 0 && (
+              <AlertDialogAction onClick={onDelete} disabled={deleting}>
+                {deleting ? (
+                  <Loader2 className="size-4 animate-spin" />
+                ) : (
+                  <Trash2 className="size-4" />
+                )}
+                Smazat
+              </AlertDialogAction>
+            )}
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

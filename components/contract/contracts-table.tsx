@@ -65,7 +65,8 @@ export function ContractsTable({
     const matchesQ =
       !needle ||
       c.contract_number.toLowerCase().includes(needle) ||
-      (c.client_name ?? "").toLowerCase().includes(needle);
+      (c.client_name ?? "").toLowerCase().includes(needle) ||
+      (c.work_name ?? "").toLowerCase().includes(needle);
     const matchesStatus = statusFilter === "all" || c.status === statusFilter;
     const matchesType = typeFilter === "all" || c.doc_type === typeFilter;
     return matchesQ && matchesStatus && matchesType;
@@ -106,7 +107,7 @@ export function ContractsTable({
           <Input
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            placeholder="Hledat číslo nebo klienta"
+            placeholder="Hledat číslo, klienta nebo dílo"
             className="pl-8"
           />
         </div>
@@ -166,6 +167,7 @@ export function ContractsTable({
                 <TableHead>Číslo</TableHead>
                 <TableHead>Typ</TableHead>
                 <TableHead>Klient</TableHead>
+                <TableHead>Název díla</TableHead>
                 <TableHead className="text-right">Cena</TableHead>
                 <TableHead>Stav</TableHead>
                 <TableHead>Upraveno</TableHead>
@@ -189,6 +191,13 @@ export function ContractsTable({
                   </TableCell>
                   <TableCell className="max-w-[16rem] truncate">
                     {c.client_name}
+                  </TableCell>
+                  <TableCell className="max-w-[16rem] truncate">
+                    {c.work_name ? (
+                      c.work_name
+                    ) : (
+                      <span className="text-muted-foreground">—</span>
+                    )}
                   </TableCell>
                   <TableCell className="text-right font-mono">
                     {DOC_BUILDERS[c.doc_type]?.priced === false
