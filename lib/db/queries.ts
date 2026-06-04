@@ -8,6 +8,7 @@ import type {
   ClientRow,
   ContractListItem,
   ContractRow,
+  DocumentFileRow,
   OrgSettingsRow,
   VersionRow,
 } from "./types";
@@ -101,6 +102,20 @@ export async function listContracts(): Promise<ContractListItem[]> {
     .order("updated_at", { ascending: false });
   if (error) throw new Error(error.message);
   return (data ?? []) as ContractListItem[];
+}
+
+export async function listDocumentFiles(
+  contractId: string
+): Promise<DocumentFileRow[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("document_files")
+    .select("*")
+    .eq("contract_id", contractId)
+    .order("is_signed", { ascending: false })
+    .order("created_at", { ascending: false });
+  if (error) throw new Error(error.message);
+  return (data ?? []) as DocumentFileRow[];
 }
 
 export async function getContract(id: string): Promise<ContractRow | null> {

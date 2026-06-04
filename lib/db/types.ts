@@ -39,6 +39,22 @@ export type VersionRow = {
   data: ContractData;
 };
 
+/** Private Storage bucket holding uploaded files (signed scans, attachments). */
+export const DOCUMENT_FILES_BUCKET = "document-files";
+
+/** An uploaded file attached to a document (e.g. the signed/scanned original). */
+export type DocumentFileRow = {
+  id: string;
+  contract_id: string;
+  storage_path: string;
+  file_name: string;
+  mime_type: string | null;
+  size_bytes: number | null;
+  is_signed: boolean;
+  uploaded_by: string | null;
+  created_at: string;
+};
+
 export type ClientRow = {
   id: string;
   company: string;

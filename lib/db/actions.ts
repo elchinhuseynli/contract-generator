@@ -386,3 +386,116 @@ export async function deleteClient(id: string): Promise<void> {
   if (error) throw new Error(error.message);
   revalidatePath("/clients");
 }
+
+// ── Uploaded files (signed scans / attachments) ─────────────────────────────
+
+const DOCUMENT_FILES_BUCKET = "document-files";
+
+export type DocumentFileInput = {
+  contractId: string;
+  storagePath: string;
+  fileName: string;
+  mimeType: string | null;
+  sizeBytes: number | null;
+  isSigned: boolean;
+};
+
+/**
+ * Record metadata for a file the browser already uploaded to Storage. If it's
+ * the signed original, demote any previous signed original (only one per doc)
+ * and move the document to "signed".
+ */
+export async function recordDocumentFile(input: DocumentFileInput): Promise<void> {
+  const user = await requireUser();
+  const supabase = await createClient();
+
+  if (input.isSigned) {
+    await supabase
+      .from("document_files")
+      .update({ is_signed: false })
+      .eq("contract_id", input.contractId)
+      .eq("is_signed", true);
+  }
+
+  const { error } = await supabase.from("document_files").insert({
+    contract_id: input.contractId,
+    storage_path: input.storagePath,
+    file_name: input.fileName,
+    mime_type: input.mimeType,
+    size_bytes: input.sizeBytes,
+    is_signed: input.isSigned,
+    uploaded_by: user.id,
+  });
+  if (error) throw new Error(error.message);
+
+  if (input.isSigned) {
+    await supabase
+      .from("contracts")
+      .update({ status: "signed" })
+      .eq("id", input.contractId);
+    revalidatePath("/dashboard");
+  }
+  revalidatePath(`/contracts/${input.contractId}/edit`);
+}
+
+/** Mark/unmark a file as the signed original (single per document). */
+export async function setDocumentFileSigned(
+  id: string,
+  isSigned: boolean
+): Promise<void> {
+  await requireUser();
+  const supabase = await createClient();
+
+  const { data: row, error: getErr } = await supabase
+    .from("document_files")
+    .select("contract_id")
+    .eq("id", id)
+    .single();
+  if (getErr || !row) throw new Error("Soubor nenalezen");
+
+  if (isSigned) {
+    await supabase
+      .from("document_files")
+      .update({ is_signed: false })
+      .eq("contract_id", row.contract_id)
+      .eq("is_signed", true);
+  }
+  const { error } = await supabase
+    .from("document_files")
+    .update({ is_signed: isSigned })
+    .eq("id", id);
+  if (error) throw new Error(error.message);
+
+  if (isSigned) {
+    await supabase
+      .from("contracts")
+      .update({ status: "signed" })
+      .eq("id", row.contract_id);
+    revalidatePath("/dashboard");
+  }
+  revalidatePath(`/contracts/${row.contract_id}/edit`);
+}
+
+/** Delete an uploaded file — removes the Storage object and the metadata row. */
+export async function deleteDocumentFile(id: string): Promise<void> {
+  await requireUser();
+  const supabase = await createClient();
+
+  const { data: row, error } = await supabase
+    .from("document_files")
+    .select("contract_id, storage_path")
+    .eq("id", id)
+    .single();
+  if (error || !row) throw new Error("Soubor nenalezen");
+
+  await supabase.storage
+    .from(DOCUMENT_FILES_BUCKET)
+    .remove([row.storage_path as string]);
+  const { error: delErr } = await supabase
+    .from("document_files")
+    .delete()
+    .eq("id", id);
+  if (delErr) throw new Error(delErr.message);
+
+  revalidatePath(`/contracts/${row.contract_id}/edit`);
+}

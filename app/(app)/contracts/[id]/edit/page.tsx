@@ -1,11 +1,17 @@
 import { notFound } from "next/navigation";
-import { getContract, getOrgSettings, listVersions } from "@/lib/db/queries";
+import {
+  getContract,
+  getOrgSettings,
+  listDocumentFiles,
+  listVersions,
+} from "@/lib/db/queries";
 import { orgToContractor } from "@/lib/db/types";
 import { getBuilder } from "@/lib/contract/builders";
 import { PageHeader } from "@/components/page-header";
 import { DocumentEditor } from "@/components/contract/contract-editor";
 import { ContractManageMenu } from "@/components/contract/contract-manage-menu";
 import { VersionHistory } from "@/components/contract/version-history";
+import { DocumentFiles } from "@/components/contract/document-files";
 
 export default async function EditContractPage({
   params,
@@ -13,10 +19,11 @@ export default async function EditContractPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const [contract, org, versions] = await Promise.all([
+  const [contract, org, versions, files] = await Promise.all([
     getContract(id),
     getOrgSettings(),
     listVersions(id),
+    listDocumentFiles(id),
   ]);
   if (!contract) notFound();
 
@@ -29,6 +36,7 @@ export default async function EditContractPage({
         title={`${cfg.shortLabel} ${contract.contract_number}`}
         description={contract.client_name ?? cfg.label}
       >
+        <DocumentFiles contractId={id} files={files} />
         <VersionHistory contractId={id} versions={versions} />
         <ContractManageMenu contractId={id} status={contract.status} />
       </PageHeader>
