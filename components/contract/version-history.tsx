@@ -19,6 +19,12 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 
+/** Document number across types: smlouva uses contractNumber, others documentNumber. */
+function docNumber(data: VersionRow["data"]): string {
+  const d = data as { contractNumber?: string; documentNumber?: string };
+  return d.contractNumber ?? d.documentNumber ?? "";
+}
+
 export function VersionHistory({
   contractId,
   versions,
@@ -74,8 +80,11 @@ export function VersionHistory({
                   {new Date(v.created_at).toLocaleString("cs-CZ")}
                 </div>
                 <div className="truncate text-xs text-muted-foreground">
-                  {v.data.contractNumber} ·{" "}
-                  {formatCZK(sumPriceItems(v.data.priceItems))}
+                  {docNumber(v.data)}
+                  {Array.isArray(v.data.priceItems) &&
+                    v.data.priceItems.length > 0 && (
+                      <> · {formatCZK(sumPriceItems(v.data.priceItems))}</>
+                    )}
                 </div>
               </div>
               {idx !== 0 && (

@@ -17,9 +17,13 @@ export type PriceItem = {
   price: number;
 };
 
-/** Total contract price = sum of all line items. */
-export function sumPriceItems(items: PriceItem[]): number {
-  return items.reduce((sum, item) => sum + (Number(item.price) || 0), 0);
+/**
+ * Total contract price = sum of all line items. Null-safe: non-priced doc
+ * types (protokol/nda/dodatek) carry no `priceItems`, so callers may pass
+ * `undefined` — treat that as an empty list (0) rather than crashing.
+ */
+export function sumPriceItems(items: PriceItem[] | undefined | null): number {
+  return (items ?? []).reduce((sum, item) => sum + (Number(item.price) || 0), 0);
 }
 
 export type ContractData = {
